@@ -1,0 +1,289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://GalEngine.dev/schemas/scene.json",
+  "title": "GalEngine Scene Script",
+  "description": "Defines a single scene (chapter/section) of the visual novel.",
+  "type": "object",
+  "required": ["scene_id", "commands"],
+  "properties": {
+    "scene_id": {
+      "type": "string",
+      "description": "Unique identifier for this scene (referenced by settings.json)."
+    },
+    "scene_name": {
+      "type": "string",
+      "description": "Human-readable scene name for flowchart display."
+    },
+    "chapter": {
+      "type": "string",
+      "description": "Chapter/act this scene belongs to."
+    },
+    "route": {
+      "type": "string",
+      "description": "Character route this scene belongs to (null for common route)."
+    },
+    "background": {
+      "type": "string",
+      "description": "Default background image for this scene."
+    },
+    "bgm": {
+      "type": "string",
+      "description": "Default background music for this scene."
+    },
+    "commands": {
+      "type": "array",
+      "description": "Ordered list of scene commands/events.",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "oneOf": [
+          { "$ref": "#/$defs/DialogueCommand" },
+          { "$ref": "#/$defs/ShowSpriteCommand" },
+          { "$ref": "#/$defs/HideSpriteCommand" },
+          { "$ref": "#/$defs/ChangeBackgroundCommand" },
+          { "$ref": "#/$defs/PlayBGMCommand" },
+          { "$ref": "#/$defs/StopBGMCommand" },
+          { "$ref": "#/$defs/PlaySFXCommand" },
+          { "$ref": "#/$defs/PlayVoiceCommand" },
+          { "$ref": "#/$defs/ShowCGCommand" },
+          { "$ref": "#/$defs/HideCGCommand" },
+          { "$ref": "#/$defs/ChoiceCommand" },
+          { "$ref": "#/$defs/JumpCommand" },
+          { "$ref": "#/$defs/SetFlagCommand" },
+          { "$ref": "#/$defs/ConditionalCommand" },
+          { "$ref": "#/$defs/WaitCommand" },
+          { "$ref": "#/$defs/TransitionCommand" },
+          { "$ref": "#/$defs/LabelCommand" },
+          { "$ref": "#/$defs/CallSceneCommand" },
+          { "$ref": "#/$defs/ReturnCommand" },
+          { "$ref": "#/$defs/EndSceneCommand" }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "DialogueCommand": {
+      "type": "object",
+      "required": ["type", "text"],
+      "properties": {
+        "type": { "const": "dialogue" },
+        "character": { "type": "string", "description": "Character ID who is speaking. Null/absent for narration." },
+        "display_name": { "type": "string", "description": "Override display name (e.g. '???')." },
+        "text": { "type": "string", "description": "The dialogue/narration text." },
+        "voice": { "type": "string", "description": "Voice file for this line." },
+        "expression": { "type": "string", "description": "Character expression variant to show." },
+        "text_speed": { "type": "number", "description": "Override text speed." },
+        "auto_advance": { "type": "number", "description": "Auto-advance after N seconds." }
+      }
+    },
+    "ShowSpriteCommand": {
+      "type": "object",
+      "required": ["type", "character"],
+      "properties": {
+        "type": { "const": "show_sprite" },
+        "character": { "type": "string", "description": "Character ID." },
+        "sprite": { "type": "string", "description": "Specific sprite variant to show. Defaults to default expression." },
+        "position": {
+          "type": "string",
+          "enum": ["left", "center", "right", "custom"],
+          "default": "center"
+        },
+        "x": { "type": "number", "description": "Custom X position (0-1, relative)." },
+        "y": { "type": "number", "description": "Custom Y position (0-1, relative)." },
+        "scale": { "type": "number", "default": 1.0 },
+        "opacity": { "type": "number", "default": 1.0, "minimum": 0, "maximum": 1 },
+        "transition": { "type": "string", "default": "fade", "description": "Transition effect name." },
+        "duration": { "type": "number", "default": 0.5, "description": "Transition duration in seconds." }
+      }
+    },
+    "HideSpriteCommand": {
+      "type": "object",
+      "required": ["type", "character"],
+      "properties": {
+        "type": { "const": "hide_sprite" },
+        "character": { "type": "string" },
+        "transition": { "type": "string", "default": "fade" },
+        "duration": { "type": "number", "default": 0.5 }
+      }
+    },
+    "ChangeBackgroundCommand": {
+      "type": "object",
+      "required": ["type", "image"],
+      "properties": {
+        "type": { "const": "background" },
+        "image": { "type": "string", "description": "Background image path relative to backgrounds dir." },
+        "transition": { "type": "string", "default": "fade" },
+        "duration": { "type": "number", "default": 1.0 }
+      }
+    },
+    "PlayBGMCommand": {
+      "type": "object",
+      "required": ["type", "file"],
+      "properties": {
+        "type": { "const": "bgm" },
+        "file": { "type": "string", "description": "BGM audio file path." },
+        "loop": { "type": "boolean", "default": true },
+        "fade_in": { "type": "number", "default": 1.0 },
+        "volume": { "type": "number", "default": 1.0, "minimum": 0, "maximum": 1 }
+      }
+    },
+    "StopBGMCommand": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "stop_bgm" },
+        "fade_out": { "type": "number", "default": 1.0 }
+      }
+    },
+    "PlaySFXCommand": {
+      "type": "object",
+      "required": ["type", "file"],
+      "properties": {
+        "type": { "const": "sfx" },
+        "file": { "type": "string" },
+        "volume": { "type": "number", "default": 1.0, "minimum": 0, "maximum": 1 },
+        "loop": { "type": "boolean", "default": false }
+      }
+    },
+    "PlayVoiceCommand": {
+      "type": "object",
+      "required": ["type", "file"],
+      "properties": {
+        "type": { "const": "voice" },
+        "file": { "type": "string" },
+        "character": { "type": "string" }
+      }
+    },
+    "ShowCGCommand": {
+      "type": "object",
+      "required": ["type", "image"],
+      "properties": {
+        "type": { "const": "show_cg" },
+        "image": { "type": "string" },
+        "cg_id": { "type": "string", "description": "ID for CG gallery tracking." },
+        "transition": { "type": "string", "default": "fade" },
+        "duration": { "type": "number", "default": 1.0 }
+      }
+    },
+    "HideCGCommand": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "hide_cg" },
+        "transition": { "type": "string", "default": "fade" },
+        "duration": { "type": "number", "default": 0.5 }
+      }
+    },
+    "ChoiceCommand": {
+      "type": "object",
+      "required": ["type", "choices"],
+      "properties": {
+        "type": { "const": "choice" },
+        "prompt": { "type": "string", "description": "Optional prompt text above choices." },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["text", "next"],
+            "properties": {
+              "text": { "type": "string", "description": "Choice button text." },
+              "next": { "type": "string", "description": "Label or scene_id to jump to." },
+              "condition": { "type": "string", "description": "Flag condition required to show this choice." },
+              "set_flags": {
+                "type": "object",
+                "description": "Flags to set when this choice is selected.",
+                "additionalProperties": { "type": ["number", "string", "boolean"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "JumpCommand": {
+      "type": "object",
+      "required": ["type", "target"],
+      "properties": {
+        "type": { "const": "jump" },
+        "target": { "type": "string", "description": "Label name within current scene." }
+      }
+    },
+    "SetFlagCommand": {
+      "type": "object",
+      "required": ["type", "flags"],
+      "properties": {
+        "type": { "const": "set_flag" },
+        "flags": {
+          "type": "object",
+          "additionalProperties": { "type": ["number", "string", "boolean"] }
+        }
+      }
+    },
+    "ConditionalCommand": {
+      "type": "object",
+      "required": ["type", "condition", "true_branch"],
+      "properties": {
+        "type": { "const": "conditional" },
+        "condition": { "type": "string", "description": "Flag condition expression." },
+        "true_branch": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Commands to run when condition is true."
+        },
+        "false_branch": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Commands to run when condition is false."
+        }
+      }
+    },
+    "WaitCommand": {
+      "type": "object",
+      "required": ["type", "duration"],
+      "properties": {
+        "type": { "const": "wait" },
+        "duration": { "type": "number", "description": "Wait duration in seconds." }
+      }
+    },
+    "TransitionCommand": {
+      "type": "object",
+      "required": ["type", "effect"],
+      "properties": {
+        "type": { "const": "transition" },
+        "effect": { "type": "string", "enum": ["fade", "dissolve", "wipe_left", "wipe_right", "wipe_up", "wipe_down", "blinds", "iris_in", "iris_out"] },
+        "duration": { "type": "number", "default": 1.0 }
+      }
+    },
+    "LabelCommand": {
+      "type": "object",
+      "required": ["type", "name"],
+      "properties": {
+        "type": { "const": "label" },
+        "name": { "type": "string", "description": "Label name for jump targets." }
+      }
+    },
+    "CallSceneCommand": {
+      "type": "object",
+      "required": ["type", "scene_id"],
+      "properties": {
+        "type": { "const": "call_scene" },
+        "scene_id": { "type": "string", "description": "Scene ID to call (returns here after scene ends)." }
+      }
+    },
+    "ReturnCommand": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "return" },
+        "target": { "type": "string", "description": "Optional label to jump to in the calling scene." }
+      }
+    },
+    "EndSceneCommand": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "end_scene" },
+        "next_scene": { "type": "string", "description": "Scene ID to transition to." }
+      }
+    }
+  }
+}

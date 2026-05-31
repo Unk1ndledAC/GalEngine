@@ -1,0 +1,58 @@
+{
+  "id": "choice_a",
+  "name": "选择分支 A - 主动打招呼",
+  "commands": [
+    {
+      "type": "show_sprite",
+      "data": {
+        "character": "bob",
+        "sprite": "bob_normal.png",
+        "position": "right",
+        "transition": "fade"
+      }
+    },
+    {
+      "type": "dialogue",
+      "data": {
+        "character": "bob",
+        "display_name": "鲍勃",
+        "text": "哦，早上好！"
+      }
+    },
+    {
+      "type": "narration",
+      "data": {
+        "text": "鲍勃看起来有点意外，但很快露出了笑容。"
+      }
+    },
+    {
+      "type": "dialogue",
+      "data": {
+        "character": "alice",
+        "display_name": "爱丽丝",
+        "text": "太好了，你们认识啊！"
+      }
+    },
+    {
+      "type": "bgm",
+      "data": {
+        "file": "bgm_happy.ogg",
+        "loop": true,
+        "fade_in": 0.5
+      }
+    },
+    {
+      "type": "se",
+      "data": {
+        "file": "se_bell.ogg",
+        "volume": 0.6
+      }
+    },
+    {
+      "type": "jump",
+      "data": {
+        "target": "ending"
+      }
+    }
+  ]
+}
