@@ -4,6 +4,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
+[![DOI](https://zenodo.org/badge/1255084198.svg)](https://doi.org/10.5281/zenodo.20474789)
 
 ## Introduction
 
@@ -152,7 +153,6 @@ For code protection, consider using [PyArmor](https://pyarmor.readthedocs.io) to
 
 ## License
 
-This project was archived in Zenodo [![DOI](https://zenodo.org/badge/1255084198.svg)](https://doi.org/10.5281/zenodo.20474789).
 GalEngine adopts a dual licensing model:
 
 - **Open-source Edition**: Apache License 2.0 — suitable for open-source projects and personal learning

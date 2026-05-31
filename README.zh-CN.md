@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
-[![PyPI](https://img.shields.io/pypi/v/GalEngine.svg)](https://pypi.org/project/GalEngine/)
+[![DOI](https://zenodo.org/badge/1255084198.svg)](https://doi.org/10.5281/zenodo.20474789)
 
 ## 简介
 
