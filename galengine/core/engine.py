@@ -162,8 +162,8 @@ class GalEngine:
         self.confirm_dialog = ConfirmDialog()
         self.message_dialog = MessageDialog()
 
-        # Flowchart
-        self.flowchart = Flowchart(self.project_loader, self.scene_manager)
+        # Flowchart (built from project data after load)
+        self.flowchart = Flowchart()
 
         # Patch manager (scan patches at startup)
         game_ver = self.project_loader.get_version()
@@ -189,6 +189,12 @@ class GalEngine:
         if not self.project_loader.load():
             print(f"ERROR: Failed to load project at {project_root}")
             return False
+
+        # Build flowchart from loaded project data
+        self.flowchart.build_from_project(
+            self.project_loader.project_data,
+            self.project_loader.get_scene_ids(),
+        )
 
         # Load settings from user data
         settings_path = os.path.join(user_dir, "settings.json")
