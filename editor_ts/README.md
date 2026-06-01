@@ -1,6 +1,4 @@
-# GalEngine TypeScript Rewrite — Architecture
-
-> Source: GalEngine Python (`C:\Users\19473\Desktop\GalEngine\galengine/`).
+# GalEngine TypeScript Version
 
 ---
 
@@ -156,27 +154,8 @@ editor_ts/
 
 ---
 
-## 4. Python → TypeScript Mapping
 
-| Python (GalEngine) | TypeScript (editor_ts) |
-|-------------------|--------------------------|
-| `dataclass` | `interface` / `class` |
-| `Enum` | `enum` or `as const` union |
-| `TYPE_CHECKING` | Interface separation |
-| `os.path` | `path` module |
-| `pygame.mixer` | Web Audio API |
-| `zlib` | `pako` |
-| `json.load/dump` | `JSON.parse/stringify` |
-| `@property` | `get` accessor |
-| `__init_subclass__` | Registry pattern |
-| `handler_map[CommandType]` | `switch` or `Map<CommandType, Handler>` |
-| Global `_engine_instance` | Module-level `export const engine` |
-| `threading` | `async/await` + Web Workers |
-| `pygame.display` | Canvas2D |
-
----
-
-## 5. Build System
+## 4. Build System
 
 | Tool | Purpose |
 |------|---------|
@@ -200,7 +179,7 @@ npm run typecheck      # TypeScript check (no emit)
 
 ---
 
-## 6. Plugin System Design
+## 5. Plugin System Design
 
 The plugin system uses a simplified host pattern. Plugins declare activation events and contribution points via a manifest.
 
@@ -217,7 +196,7 @@ The plugin system uses a simplified host pattern. Plugins declare activation eve
 
 ---
 
-## 7. LLM Integration
+## 6. LLM Integration
 
 Located in `src/workbench/contrib/llm/`:
 - **AIChatPanel** — chat interface with context awareness (current scene, selected commands)
