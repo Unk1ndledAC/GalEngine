@@ -1,3 +1,0 @@
-[console_scripts]
-galengine-cli = cli.main:cli
-galengine-editor = editor.desktop_app:main
