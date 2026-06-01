@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GalEngine Editor</title>
+<link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+
+<!-- ===== Sidebar ===== -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <span>GalEngine Editor</span>
+    <span style="font-size:12px;color:#888;font-weight:normal">v0.1.0</span>
+  </div>
+  <div class="sidebar-tabs">
+    <button class="sidebar-tab active" data-tab="project">项目</button>
+    <button class="sidebar-tab" data-tab="assets">素材</button>
+  </div>
+  <div class="sidebar-content">
+    <!-- Project Tree -->
+    <div class="project-tree active" id="projectTree">
+      <div class="tree-item" data-type="project"><span class="icon">&#128193;</span> <span class="tree-label">Untitled Game</span></div>
+      <div class="tree-item" style="padding-left:28px" data-type="file"><span class="icon">&#128196;</span> <span class="tree-label">settings.json</span></div>
+      <div class="tree-item" style="padding-left:28px" data-type="folder"><span class="icon">&#128193;</span> <span class="tree-label">assets/</span></div>
+      <div class="tree-item" style="padding-left:44px" data-type="folder"><span class="icon">&#128444;</span> <span class="tree-label">backgrounds/</span></div>
+      <div class="tree-item" style="padding-left:44px" data-type="folder"><span class="icon">&#128101;</span> <span class="tree-label">sprites/</span></div>
+      <div class="tree-item" style="padding-left:44px" data-type="folder"><span class="icon">&#127925;</span> <span class="tree-label">audio/</span></div>
+      <div class="tree-item" style="padding-left:44px" data-type="folder"><span class="icon">&#128196;</span> <span class="tree-label">scripts/</span></div>
+      <div class="tree-item" style="padding-left:44px" data-type="folder"><span class="icon">&#128196;</span> <span class="tree-label">fonts/</span></div>
+      <div class="tree-item" style="padding-left:44px" data-type="file"><span class="icon">&#128221;</span> <span class="tree-label">prologue.json</span></div>
+      <div class="tree-item" style="padding-left:44px" data-type="file"><span class="icon">&#128221;</span> <span class="tree-label">chapter1.json</span></div>
+    </div>
+    <!-- Asset Panel -->
+    <div class="asset-panel" id="assetPanel">
+      <div class="asset-category">
+        <div class="asset-category-header">背景 Backgrounds</div>
+        <div class="asset-grid" id="assetBgGrid">
+          <div class="asset-thumb" draggable="true" data-path="assets/backgrounds/bg_classroom.png">bg_classroom</div>
+          <div class="asset-thumb" draggable="true" data-path="assets/backgrounds/bg_street.png">bg_street</div>
+          <div class="asset-thumb" draggable="true" data-path="assets/backgrounds/bg_room.png">bg_room</div>
+        </div>
+      </div>
+      <div class="asset-category">
+        <div class="asset-category-header">立绘 Sprites</div>
+        <div class="asset-grid" id="assetSpriteGrid">
+          <div class="asset-thumb" draggable="true" data-path="assets/sprites/alice.png">alice</div>
+          <div class="asset-thumb" draggable="true" data-path="assets/sprites/bob.png">bob</div>
+        </div>
+      </div>
+      <div class="asset-category">
+        <div class="asset-category-header">音频 Audio</div>
+        <div class="asset-list" id="assetAudioList">
+          <div class="asset-list-item" data-path="assets/audio/bgm_everyday.ogg">&#127925; bgm_everyday.ogg</div>
+          <div class="asset-list-item" data-path="assets/audio/se_click.ogg">&#128165; se_click.ogg</div>
+        </div>
+      </div>
+      <div class="asset-category">
+        <div class="asset-category-header">CG</div>
+        <div class="asset-grid" id="assetCgGrid">
+          <div class="asset-thumb" draggable="true" data-path="assets/cg/cg_ending.png">cg_ending</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Main Area ===== -->
+<div class="main-area">
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <button class="primary" id="btnCompile" title="编译游戏">&#9654; 编译</button>
+      <button id="btnPreview" title="实时预览">&#9654; 预览</button>
+      <button id="btnSave" title="保存全部">&#128190; 保存</button>
+    </div>
+    <div class="toolbar-group">
+      <button id="btnModeScene" class="active" title="场景编辑模式">场景</button>
+      <button id="btnModeFlowchart" title="流程图模式">流程图</button>
+      <button id="btnModeLayout" title="UI布局模式">布局</button>
+    </div>
+    <div class="toolbar-group">
+      <button id="btnAddScene" title="添加场景">+ 场景</button>
+      <button id="btnAddDialogue" title="添加对话">+ 对话</button>
+      <button id="btnAddChoice" title="添加选项">+ 选项</button>
+    </div>
+    <div class="toolbar-group">
+      <span style="font-size:12px;color:#888;padding:4px 0">编辑模式:</span>
+      <select class="toolbar-select" id="selEditorMode">
+        <option value="scene">场景编辑</option>
+        <option value="flowchart">流程图</option>
+        <option value="layout">UI布局</option>
+      </select>
+    </div>
+    <span style="flex:1"></span>
+    <div class="toolbar-group">
+      <button id="btnUndo" title="撤销">&#8630; 撤销</button>
+      <button id="btnRedo" title="重做">&#8631; 重做</button>
+    </div>
+  </div>
+
+  <!-- Editor Area -->
+  <div class="editor-area">
+
+    <!-- Scene Editor Canvas -->
+    <div class="canvas-container" id="canvasContainer">
+      <div class="canvas-toolbar">
+        <button id="btnZoomIn">放大</button>
+        <button id="btnZoomOut">缩小</button>
+        <button id="btnZoomFit">适配</button>
+        <button id="btnShowGrid">网格</button>
+      </div>
+      <div class="canvas" id="canvas">
+        <div class="canvas-textbox" id="canvasTextbox" style="bottom:20px;left:10%;width:80%">
+          对话预览区域 - 在这里放置立绘和背景
+        </div>
+      </div>
+      <div class="drop-zone" id="dropZone">拖拽素材到此处</div>
+    </div>
+
+    <!-- Flowchart Editor -->
+    <div class="flowchart-container" id="flowchartContainer">
+      <div class="flowchart-canvas" id="flowchartCanvas">
+        <!-- Flowchart nodes rendered here by JS -->
+      </div>
+    </div>
+
+    <!-- UI Layout Editor -->
+    <div class="layout-editor-container" id="layoutEditorContainer">
+      <div class="layout-canvas" id="layoutCanvas">
+        <!-- Layout elements rendered here by JS -->
+      </div>
+    </div>
+
+    <!-- Right Panel (Property Panel) -->
+    <div class="panel-right" id="panelRight">
+      <!-- Scene Properties -->
+      <div class="panel-section" id="panelSceneProps">
+        <h3>场景属性 Scene</h3>
+        <label>场景 ID</label>
+        <input type="text" id="inpSceneId" value="prologue">
+        <label>场景名称</label>
+        <input type="text" id="inpSceneName" value="Prologue">
+        <label>章节</label>
+        <input type="text" id="inpSceneChapter" value="Chapter 1">
+        <label>背景</label>
+        <select id="selBackground">
+          <option value="">None</option>
+          <option value="bg_classroom.png" selected>bg_classroom.png</option>
+          <option value="bg_street.png">bg_street.png</option>
+          <option value="bg_room.png">bg_room.png</option>
+        </select>
+        <label>BGM</label>
+        <select id="selBGM">
+          <option value="">None</option>
+          <option value="bgm_everyday.ogg" selected>bgm_everyday.ogg</option>
+        </select>
+      </div>
+
+      <!-- Element Properties -->
+      <div class="panel-section" id="panelElementProps">
+        <h3>元素属性 Element</h3>
+        <label>类型 Type</label>
+        <select id="selElemType">
+          <option value="dialogue" selected>对话 Dialogue</option>
+          <option value="narration">旁白 Narration</option>
+          <option value="choice">选项 Choice</option>
+          <option value="command">命令 Command</option>
+        </select>
+        <label>角色 Character</label>
+        <select id="selCharacter">
+          <option value="">None (旁白)</option>
+          <option value="protagonist">protagonist</option>
+          <option value="alice" selected>alice</option>
+          <option value="bob">bob</option>
+        </select>
+        <label>文本 Text</label>
+        <textarea id="inpText" rows="4">你的故事从这里开始...</textarea>
+        <label>语音 Voice</label>
+        <select id="selVoice">
+          <option value="">None</option>
+          <option value="vo_prologue_01.ogg">vo_prologue_01.ogg</option>
+        </select>
+        <label>立绘 Sprite</label>
+        <select id="selSprite">
+          <option value="">None</option>
+          <option value="alice_normal.png">alice_normal.png</option>
+          <option value="alice_smile.png">alice_smile.png</option>
+        </select>
+        <label>位置 Position</label>
+        <div class="panel-row">
+          <label style="min-width:30px">X</label>
+          <input type="number" id="inpPosX" value="50" style="flex:1">
+          <label style="min-width:30px">Y</label>
+          <input type="number" id="inpPosY" value="20" style="flex:1">
+        </div>
+        <label>过渡效果 Transition</label>
+        <select id="selTransition">
+          <option value="none">None</option>
+          <option value="fade">Fade</option>
+          <option value="crossfade">Crossfade</option>
+          <option value="dissolve">Dissolve</option>
+          <option value="slide">Slide</option>
+        </select>
+      </div>
+
+      <!-- UI Layout Properties (shown in layout mode) -->
+      <div class="panel-section" id="panelLayoutProps" style="display:none">
+        <h3>UI布局属性</h3>
+        <label>元素 ID</label>
+        <input type="text" id="inpLayoutId" value="">
+        <label>锚点 Anchor</label>
+        <select id="selAnchor">
+          <option value="top-left">Top Left</option>
+          <option value="top-center">Top Center</option>
+          <option value="top-right">Top Right</option>
+          <option value="middle-left">Middle Left</option>
+          <option value="middle-center" selected>Middle Center</option>
+          <option value="middle-right">Middle Right</option>
+          <option value="bottom-left">Bottom Left</option>
+          <option value="bottom-center">Bottom Center</option>
+          <option value="bottom-right">Bottom Right</option>
+        </select>
+        <label>位置 X</label>
+        <input type="number" id="inpLayoutX" value="0">
+        <label>位置 Y</label>
+        <input type="number" id="inpLayoutY" value="0">
+        <label>宽度 Width</label>
+        <input type="number" id="inpLayoutW" value="200">
+        <label>高度 Height</label>
+        <input type="number" id="inpLayoutH" value="100">
+        <label>可见条件 Visible If</label>
+        <input type="text" id="inpLayoutVisible" value="" placeholder="flag_name == true">
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline-container" id="timelineContainer">
+    <div class="timeline-toolbar">
+      <button id="btnTimelineAdd">+ 添加</button>
+      <button id="btnTimelineDel">- 删除</button>
+      <button id="btnTimelineUp">&#9650; 上移</button>
+      <button id="btnTimelineDown">&#9660; 下移</button>
+      <span style="flex:1"></span>
+      <span style="font-size:11px;color:#888;padding:4px 0" id="timelineInfo">0 / 0 命令</span>
+    </div>
+    <div class="timeline-scroll" id="timelineScroll">
+      <!-- Timeline items rendered here by JS -->
+      <div class="timeline-item active">
+        <span class="type-badge">旁白</span>
+        旁白<br>"你的故事..."
+      </div>
+      <div class="timeline-item">
+        <span class="type-badge">对话</span>
+        对话<br>Alice
+      </div>
+      <div class="timeline-item">
+        <span class="type-badge">选项</span>
+        选项<br>"做什么?"
+      </div>
+      <div class="timeline-item" style="display:flex;align-items:center;justify-content:center;color:#555;font-size:24px;min-width:60px">+</div>
+    </div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar" id="statusBar">
+    <span class="status-item" id="statusScene">场景: prologue.json</span>
+    <span class="status-item" id="statusCommands">命令: 3</span>
+    <span class="status-item" id="statusProject">项目: Untitled Game v0.1.0</span>
+    <span class="status-item" id="statusSave">已保存</span>
+    <span style="flex:1"></span>
+    <span class="status-item" id="statusMode">模式: 场景编辑</span>
+  </div>
+</div>
+
+<!-- ===== Preview Panel (right side popup) ===== -->
+<div class="preview-panel" id="previewPanel">
+  <div class="preview-header">
+    <span>实时预览 Preview</span>
+    <button class="btn-small" id="btnClosePreview">关闭</button>
+  </div>
+  <iframe class="preview-frame" id="previewFrame" src="about:blank"></iframe>
+</div>
+
+<!-- ===== Compile Progress Popup ===== -->
+<div class="compile-progress" id="compileProgress">
+  <div style="font-size:14px;font-weight:bold;margin-bottom:8px;" id="compileTitle">正在编译...</div>
+  <div class="progress-bar"><div class="progress-bar-fill" id="compileProgressBar" style="width:0%"></div></div>
+  <div style="font-size:12px;color:#aaa;" id="compileStatus">准备中...</div>
+  <div style="margin-top:8px;font-size:11px;color:#666;max-height:80px;overflow-y:auto;" id="compileLog"></div>
+</div>
+
+<!-- ===== Modal: Add Scene ===== -->
+<div class="modal-overlay" id="modalAddScene">
+  <div class="modal">
+    <h2>添加场景 Add Scene</h2>
+    <label>场景 ID</label>
+    <input type="text" id="inpNewSceneId" placeholder="e.g. chapter2_opening">
+    <label>场景名称</label>
+    <input type="text" id="inpNewSceneName" placeholder="e.g. Chapter 2 Opening">
+    <div class="modal-buttons">
+      <button class="btn-small" onclick="document.getElementById('modalAddScene').classList.remove('active')">取消</button>
+      <button class="btn-small primary" onclick="alert('场景添加功能需连接后端API')">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Scripts ===== -->
+<script src="js/editor.js"></script>
+
+</body>
+</html>
