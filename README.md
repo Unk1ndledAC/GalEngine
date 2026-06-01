@@ -76,7 +76,7 @@
 
 ```
 editor_ts/
-├── ARCHITECTURE.md          ← this file
+├── README.md          ← this file
 ├── package.json
 ├── tsconfig.json
 ├── tsconfig.main.json
