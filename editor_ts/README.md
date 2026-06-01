@@ -1,6 +1,6 @@
 # GalEngine TypeScript Version
 
----
+[![TypeScript](https://img.shields.io/badge/typescript-5.6%2B-blue.svg)](https://www.typescriptlang.org/)
 
 ## 1. Design Principles
 
