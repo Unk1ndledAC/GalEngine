@@ -134,6 +134,11 @@ export const App: React.FC = () => {
     }
   }, [activeBottom, bottomVisible]);
 
+  // Close search panel — switch back to explorer and hide sidebar
+  const handleCloseSearch = useCallback(() => {
+    setActiveSidebar('explorer');
+  }, []);
+
   return (
     <div className="workbench">
       <div className="workbench-top">
@@ -145,7 +150,7 @@ export const App: React.FC = () => {
         <Allotment>
           {sidebarVisible && projectPath && (
             <Allotment.Pane preferredSize={260} minSize={180} maxSize={500}>
-              <Sidebar activeView={activeSidebar} />
+              <Sidebar activeView={activeSidebar} onCloseSearch={handleCloseSearch} />
             </Allotment.Pane>
           )}
           <Allotment.Pane>

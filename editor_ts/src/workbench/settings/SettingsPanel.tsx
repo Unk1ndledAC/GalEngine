@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSettingsStore, type Language } from './SettingsStore';
+import { useTranslation } from '@i18n/useTranslation';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -25,6 +26,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   const setAutoSaveEnabled = useSettingsStore((s) => s.setAutoSaveEnabled);
   const setAutoSaveDelay = useSettingsStore((s) => s.setAutoSaveDelay);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
+  const { t } = useTranslation();
 
   const [delayInput, setDelayInput] = useState(String(autoSave.delay / 1000));
 
@@ -45,13 +47,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
     <div className="settings-overlay" onClick={onClose}>
       <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
         <div className="settings-header">
-          <h2 className="settings-title">Editor Settings</h2>
+          <h2 className="settings-title">{t('settings.title')}</h2>
           <button className="settings-close-btn" onClick={onClose}>&times;</button>
         </div>
 
         {/* Auto-Save Section */}
         <div className="settings-section">
-          <h3 className="settings-section-title">Auto Save</h3>
+          <h3 className="settings-section-title">{t('settings.autoSave')}</h3>
           <div className="settings-row">
             <label className="settings-toggle">
               <input
@@ -59,12 +61,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
                 checked={autoSave.enabled}
                 onChange={(e) => setAutoSaveEnabled(e.target.checked)}
               />
-              <span>Enable Auto Save</span>
+              <span>{t('settings.autoSaveEnable')}</span>
             </label>
           </div>
           <div className="settings-row">
             <label className="settings-label">
-              Auto Save Delay (seconds):
+              {t('settings.autoSaveDelay')}
             </label>
             <input
               type="number"
@@ -78,14 +80,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
           </div>
           {autoSave.enabled && (
             <p className="settings-hint">
-              Files will be auto-saved {delayInput}s after you stop typing.
+              {t('settings.autoSaveHint')}
             </p>
           )}
         </div>
 
         {/* Language Section */}
         <div className="settings-section">
-          <h3 className="settings-section-title">Language / \u8bed\u8a00</h3>
+          <h3 className="settings-section-title">{t('settings.language')}</h3>
           <div className="settings-row">
             <select
               className="settings-select"
@@ -98,12 +100,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
             </select>
           </div>
           <p className="settings-hint">
-            Changes take effect immediately. Restart not required.
+            {t('settings.languageHint')}
           </p>
         </div>
 
         <div className="settings-footer">
-          <button className="settings-btn-close" onClick={onClose}>Close</button>
+          <button className="settings-btn-close" onClick={onClose}>{t('settings.close')}</button>
         </div>
       </div>
     </div>

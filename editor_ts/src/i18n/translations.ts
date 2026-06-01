@@ -34,6 +34,7 @@ export type TranslationKey =
   | 'filetree.openHint'
   | 'filetree.openProject'
   | 'filetree.contextNewFile'
+  | 'filetree.contextRename'
   | 'filetree.contextDelete'
   | 'filetree.confirmDelete'
   | 'filetree.confirmDeleteDir'
@@ -124,6 +125,7 @@ const zhCN: Record<TranslationKey, string> = {
   'filetree.openHint': '使用 Ctrl+O 打开项目，或 Ctrl+N 创建新项目。',
   'filetree.openProject': '打开项目',
   'filetree.contextNewFile': '新建文件',
+  'filetree.contextRename': '重命名',
   'filetree.contextDelete': '删除',
   'filetree.confirmDelete': '确定要删除',
   'filetree.confirmDeleteDir': '这将递归删除所有内容。',
@@ -208,6 +210,7 @@ const jaJP: Record<TranslationKey, string> = {
   'filetree.openHint': 'Ctrl+O でプロジェクトを開く、または Ctrl+N で新規作成。',
   'filetree.openProject': 'プロジェクトを開く',
   'filetree.contextNewFile': '新規ファイル',
+  'filetree.contextRename': '名前の変更',
   'filetree.contextDelete': '削除',
   'filetree.confirmDelete': '本当に削除しますか？',
   'filetree.confirmDeleteDir': '全ての内容が再帰的に削除されます。',
@@ -285,6 +288,7 @@ const enUS: Record<TranslationKey, string> = {
   'filetree.openHint': 'Use Ctrl+O to open a project, or Ctrl+N to create a new one.',
   'filetree.openProject': 'Open Project',
   'filetree.contextNewFile': 'New File',
+  'filetree.contextRename': 'Rename',
   'filetree.contextDelete': 'Delete',
   'filetree.confirmDelete': 'Are you sure you want to delete',
   'filetree.confirmDeleteDir': 'This will delete all contents recursively.',

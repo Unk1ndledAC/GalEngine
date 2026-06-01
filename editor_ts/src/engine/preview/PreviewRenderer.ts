@@ -84,10 +84,13 @@ export class PreviewRenderer {
   private _offscreenW = -1;
   private _offscreenH = -1;
 
-  // Cached default background gradient (avoid per-frame allocation)
+  // Cached values to avoid per-frame allocations
   private _defaultBgGradient: CanvasGradient | null = null;
   private _defaultBgResW = -1;
   private _defaultBgResH = -1;
+  private _resW = 0;  // cached resolution width
+  private _resH = 0;  // cached resolution height
+  private _sortedSprites: PreviewSprite[] = []; // cached sorted sprite array
 
   // Click callback
   onClick?: () => void;
@@ -225,6 +228,8 @@ export class PreviewRenderer {
   /** Set canvas logical resolution. */
   setResolution(w: number, h: number): void {
     this._state.resolution = [w, h];
+    this._resW = w;
+    this._resH = h;
   }
 
   // ---- Asset Loading ----
@@ -431,6 +436,7 @@ export class PreviewRenderer {
     this._transitions = [];
     this._choiceRects = [];
     this._defaultBgGradient = null;
+    this._sortedSprites = [];
     this._markDirty();
   }
 
@@ -536,7 +542,10 @@ export class PreviewRenderer {
 
   private _draw(): void {
     const ctx = this._ctx;
-    const [W, H] = this._state.resolution;
+    // Use cached resolution values — avoid destructuring this._state.resolution
+    // which would create a new array every frame
+    const W = this._resW;
+    const H = this._resH;
 
     // Scale canvas to fit
     const cw = this._canvas.width / (window.devicePixelRatio || 1);
@@ -657,10 +666,17 @@ export class PreviewRenderer {
   }
 
   private _drawSprites(ctx: CanvasRenderingContext2D, W: number, H: number): void {
-    const sprites = [...this._state.sprites.values()]
-      .sort((a, b) => a.zOrder - b.zOrder);
+    // Rebuild cached sorted array only when sprite count changes
+    const spriteCount = this._state.sprites.size;
+    if (this._sortedSprites.length !== spriteCount) {
+      this._sortedSprites = [...this._state.sprites.values()];
+      this._sortedSprites.sort((a, b) => a.zOrder - b.zOrder);
+    } else {
+      // Re-sort in case zOrder changed (cheaper than full rebuild)
+      this._sortedSprites.sort((a, b) => a.zOrder - b.zOrder);
+    }
 
-    for (const s of sprites) {
+    for (const s of this._sortedSprites) {
       if (!s.visible || !s.image) continue;
 
       ctx.save();

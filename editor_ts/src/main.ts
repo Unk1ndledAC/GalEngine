@@ -257,21 +257,27 @@ function registerIpcHandlers(): void {
   const settingsDir = path.join(app.getPath('home'), '.galengine');
   const settingsPath = path.join(settingsDir, 'settings.json');
 
-  const defaultSettings = {
-    autoSave: { enabled: true, delay: 10000 },
-    language: 'en-US',
-  };
+  function getDefaultSettings() {
+    const locale = app.getLocale();
+    let language: 'zh-CN' | 'ja-JP' | 'en-US' = 'en-US';
+    if (locale.startsWith('zh')) language = 'zh-CN';
+    else if (locale.startsWith('ja')) language = 'ja-JP';
+    return {
+      autoSave: { enabled: true, delay: 10000 },
+      language,
+    };
+  }
 
   ipcMain.handle('settings:load', async () => {
     try {
       const raw = await fs.readFile(settingsPath, 'utf-8');
       return JSON.parse(raw);
     } catch {
-      return defaultSettings;
+      return getDefaultSettings();
     }
   });
 
-  ipcMain.handle('settings:save', async (_event, settings: typeof defaultSettings) => {
+  ipcMain.handle('settings:save', async (_event, settings: { autoSave: { enabled: boolean; delay: number }; language: string }) => {
     await fs.mkdir(settingsDir, { recursive: true });
     await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
   });

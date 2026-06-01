@@ -50,10 +50,13 @@ export const FileTree: React.FC = () => {
   const [newFileParent, setNewFileParent] = useState<string | null>(null);
   const [newFileName, setNewFileName] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<TreeNode | null>(null);
+  const [renamingNode, setRenamingNode] = useState<TreeNode | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     visible: false, x: 0, y: 0, node: null,
   });
   const newFileInputRef = useRef<HTMLInputElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const openFile = useEditorStore((s) => s.openFile);
   const vfs = getElectronVFS();
@@ -229,6 +232,63 @@ export const FileTree: React.FC = () => {
     setDeleteConfirm(null);
   }, [deleteConfirm, vfs, projectPath, loadRoot]);
 
+  // ---- Rename ----
+
+  const startRename = useCallback((node: TreeNode) => {
+    closeContextMenu();
+    setRenamingNode(node);
+    setRenameValue(node.name);
+    setTimeout(() => renameInputRef.current?.focus(), 50);
+  }, [closeContextMenu]);
+
+  const confirmRename = useCallback(async () => {
+    if (!renamingNode || !renameValue.trim()) {
+      setRenamingNode(null);
+      return;
+    }
+    const newName = renameValue.trim();
+    if (newName === renamingNode.name) {
+      setRenamingNode(null);
+      return;
+    }
+    try {
+      // Build old and new paths
+      const parentPath = renamingNode.path.substring(0, renamingNode.path.lastIndexOf('\\'));
+      const newPath = `${parentPath}\\${newName}`;
+      // Read old content (file) or list old children (directory) for later refresh
+      const oldContent = renamingNode.isDirectory ? null : await vfs.readTextFile(renamingNode.path).catch(() => null);
+      // Create at new path
+      if (renamingNode.isDirectory) {
+        await vfs.mkdir(newPath);
+      } else if (oldContent !== null) {
+        await vfs.writeTextFile(newPath, oldContent);
+      }
+      // Delete old path
+      await vfs.delete(renamingNode.path);
+      // Refresh tree
+      if (parentPath === projectPath) {
+        loadRoot(projectPath);
+      } else {
+        reloadNodeChildren(parentPath);
+        setExpanded((prev) => new Set([...prev, parentPath]));
+      }
+    } catch (err) {
+      console.error('Failed to rename:', err);
+    }
+    setRenamingNode(null);
+    setRenameValue('');
+  }, [renamingNode, renameValue, vfs, projectPath, loadRoot, reloadNodeChildren]);
+
+  const cancelRename = useCallback(() => {
+    setRenamingNode(null);
+    setRenameValue('');
+  }, []);
+
+  const handleRenameKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') confirmRename();
+    if (e.key === 'Escape') cancelRename();
+  }, [confirmRename, cancelRename]);
+
   // ---- Toolbar actions ----
 
   const handleToolbarNewFile = useCallback(() => {
@@ -354,6 +414,12 @@ export const FileTree: React.FC = () => {
             onNewFileKeyDown={handleNewFileKeyDown}
             newFileInputRef={newFileInputRef}
             filenamePlaceholder={t('filetree.filenamePlaceholder')}
+            renamingNode={renamingNode}
+            renameValue={renameValue}
+            onRenameValueChange={setRenameValue}
+            onRenameKeyDown={handleRenameKeyDown}
+            renameInputRef={renameInputRef}
+            onCancelRename={cancelRename}
           />
         )}
       </div>
@@ -372,15 +438,23 @@ export const FileTree: React.FC = () => {
             {t('filetree.contextNewFile')}
           </button>
           {contextMenu.node && (
-            <button
-              className="tree-context-item tree-context-item-danger"
-              onClick={() => {
-                closeContextMenu();
-                setDeleteConfirm(contextMenu.node);
-              }}
-            >
-              {t('filetree.contextDelete')} "{contextMenu.node.name}"
-            </button>
+            <>
+              <button
+                className="tree-context-item"
+                onClick={() => startRename(contextMenu.node!)}
+              >
+                {t('filetree.contextRename')} "{contextMenu.node.name}"
+              </button>
+              <button
+                className="tree-context-item tree-context-item-danger"
+                onClick={() => {
+                  closeContextMenu();
+                  setDeleteConfirm(contextMenu.node);
+                }}
+              >
+                {t('filetree.contextDelete')} "{contextMenu.node.name}"
+              </button>
+            </>
           )}
         </div>
       )}
@@ -423,6 +497,12 @@ interface TreeListProps {
   onNewFileKeyDown: (e: React.KeyboardEvent) => void;
   newFileInputRef: React.RefObject<HTMLInputElement | null>;
   filenamePlaceholder: string;
+  renamingNode: TreeNode | null;
+  renameValue: string;
+  onRenameValueChange: (v: string) => void;
+  onRenameKeyDown: (e: React.KeyboardEvent) => void;
+  renameInputRef: React.RefObject<HTMLInputElement | null>;
+  onCancelRename: () => void;
 }
 
 const TreeList: React.FC<TreeListProps> = ({
@@ -438,6 +518,12 @@ const TreeList: React.FC<TreeListProps> = ({
   onNewFileKeyDown,
   newFileInputRef,
   filenamePlaceholder,
+  renamingNode,
+  renameValue,
+  onRenameValueChange,
+  onRenameKeyDown,
+  renameInputRef,
+  onCancelRename,
 }) => {
   return (
     <>
@@ -459,6 +545,20 @@ const TreeList: React.FC<TreeListProps> = ({
             </span>
             <span className="tree-name">{node.name}</span>
           </div>
+          {/* Rename inline input */}
+          {renamingNode?.path === node.path && (
+            <div style={{ paddingLeft: 12 + depth * 16 }}>
+              <input
+                ref={renameInputRef as React.RefObject<HTMLInputElement>}
+                className="tree-new-file-input"
+                type="text"
+                value={renameValue}
+                onChange={(e) => onRenameValueChange(e.target.value)}
+                onKeyDown={onRenameKeyDown}
+                onBlur={onCancelRename}
+              />
+            </div>
+          )}
           {node.isDirectory && expanded.has(node.path) && node.children && (
             <TreeList
               nodes={node.children}
@@ -473,6 +573,12 @@ const TreeList: React.FC<TreeListProps> = ({
               onNewFileKeyDown={onNewFileKeyDown}
               newFileInputRef={newFileInputRef}
               filenamePlaceholder={filenamePlaceholder}
+              renamingNode={renamingNode}
+              renameValue={renameValue}
+              onRenameValueChange={onRenameValueChange}
+              onRenameKeyDown={onRenameKeyDown}
+              renameInputRef={renameInputRef}
+              onCancelRename={onCancelRename}
             />
           )}
       {/* New file inline input */}

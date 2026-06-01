@@ -10,12 +10,17 @@
  */
 
 import React, { useCallback, useRef, useEffect, useState } from 'react';
-import Editor, { type OnMount, type BeforeMount } from '@monaco-editor/react';
+import Editor, { type OnMount, type BeforeMount, loader } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
+import * as monaco from 'monaco-editor';
 import { useEditorStore } from './EditorStore';
 import { useSettingsStore } from '@workbench/settings/SettingsStore';
 import { getElectronVFS } from '@platform/electron-vfs';
 import { useTranslation } from '@i18n/useTranslation';
+
+// Configure Monaco loader to use the locally installed package instead of CDN.
+// Without this, Electron apps without internet access will hang on "Loading editor..." forever.
+loader.config({ monaco });
 
 // ---------------------------------------------------------------------------
 // JSON validation schema for GalEngine scene files (simplified)

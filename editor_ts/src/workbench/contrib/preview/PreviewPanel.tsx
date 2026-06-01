@@ -126,6 +126,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
 
     return () => {
       renderer.stop();
+      renderer.dispose();
       ro.disconnect();
     };
   }, [setError]);
