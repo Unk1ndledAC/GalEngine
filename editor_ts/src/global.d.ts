@@ -9,6 +9,11 @@ interface FileStat {
   mtimeMs: number;
 }
 
+interface DirEntry {
+  name: string;
+  isDirectory: boolean;
+}
+
 interface VFSAPI {
   readTextFile(path: string): Promise<string>;
   readBinaryFile(path: string): Promise<ArrayBuffer>;
@@ -16,8 +21,10 @@ interface VFSAPI {
   writeBinaryFile(path: string, data: ArrayBuffer): Promise<void>;
   exists(path: string): Promise<boolean>;
   listDir(path: string): Promise<string[]>;
+  listDirDetailed(path: string): Promise<DirEntry[]>;
   mkdir(path: string): Promise<void>;
   stat(path: string): Promise<FileStat>;
+  delete(path: string): Promise<void>;
 }
 
 interface DialogAPI {
@@ -39,11 +46,22 @@ interface MenuEvents {
   onSaveAs(callback: () => void): () => void;
 }
 
+interface EditorSettings {
+  autoSave: { enabled: boolean; delay: number };
+  language: 'zh-CN' | 'ja-JP' | 'en-US';
+}
+
+interface SettingsAPI {
+  load(): Promise<EditorSettings>;
+  save(settings: EditorSettings): Promise<void>;
+}
+
 interface GalEngineBridge {
   fs: VFSAPI;
   dialog: DialogAPI;
   platform: PlatformAPI;
   menu: MenuEvents;
+  settings: SettingsAPI;
 }
 
 interface Window {

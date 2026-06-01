@@ -316,6 +316,138 @@ html, body, #root {
   background: var(--bg-active);
 }
 
+/* ---- File Tree Context Menu ---- */
+
+.tree-context-menu {
+  position: fixed;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  min-width: 160px;
+  padding: 4px 0;
+  animation: tree-menu-in 0.1s ease;
+}
+
+@keyframes tree-menu-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.tree-context-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tree-context-item:hover {
+  background: var(--bg-hover);
+}
+
+.tree-context-item-danger {
+  color: #ff6666;
+}
+
+.tree-context-item-danger:hover {
+  background: rgba(255, 102, 102, 0.12);
+}
+
+/* ---- File Tree Overlay & Dialog ---- */
+
+.tree-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1002;
+}
+
+.tree-dialog {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.tree-dialog-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+
+.tree-dialog-msg {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+
+.tree-dialog-path {
+  font-size: 11px;
+  font-family: 'Fira Code', monospace;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin: 8px 0 16px;
+  word-break: break-all;
+}
+
+.tree-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tree-btn-danger {
+  background: #cc3333;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.tree-btn-danger:hover {
+  background: #e04444;
+}
+
+/* ---- New File Inline Input ---- */
+
+.tree-new-file-input {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--accent);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: 'Fira Code', monospace;
+  padding: 2px 8px;
+  border-radius: 3px;
+  outline: none;
+  width: calc(100% - 30px);
+  margin: 2px 0;
+}
+
+.tree-new-file-input::placeholder {
+  color: var(--text-muted);
+}
+
 /* ===================================================================
  * Editor Area
  * =================================================================== */
@@ -1932,4 +2064,398 @@ html, body, #root {
 
 .newproject-btn-create:hover:not(:disabled) {
   filter: brightness(1.15);
+}
+
+/* ===================================================================
+ * Settings Panel
+ * =================================================================== */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  animation: settings-fade-in 0.15s ease;
+}
+
+@keyframes settings-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.settings-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.settings-close-btn:hover {
+  color: var(--text-primary);
+}
+
+.settings-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.settings-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.settings-toggle input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.settings-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.settings-input {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Fira Code', monospace;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.settings-input:focus {
+  border-color: var(--accent);
+}
+
+.settings-input:disabled {
+  opacity: 0.4;
+}
+
+.settings-input-narrow {
+  width: 80px;
+  text-align: center;
+}
+
+.settings-select {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.settings-select:focus {
+  border-color: var(--accent);
+}
+
+.settings-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+.settings-btn-close {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 6px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.settings-btn-close:hover {
+  background: var(--bg-active);
+}
+
+/* ===================================================================
+ * Search Panel
+ * =================================================================== */
+
+.search-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-primary);
+}
+
+.search-bar {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.search-input-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.search-input {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-replace-input {
+  border-color: var(--accent-dim);
+}
+
+.search-toggle-btns {
+  display: flex;
+  gap: 2px;
+}
+
+.search-option-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-family: 'Fira Code', monospace;
+  transition: all 0.1s;
+}
+
+.search-option-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.search-option-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.search-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.search-btn {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: background 0.1s;
+}
+
+.search-btn:hover:not(:disabled) {
+  background: var(--bg-active);
+}
+
+.search-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.search-btn-warn {
+  background: rgba(233, 69, 96, 0.15);
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+.search-btn-warn:hover:not(:disabled) {
+  background: rgba(233, 69, 96, 0.3);
+}
+
+.search-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: auto;
+  line-height: 1;
+}
+
+.search-close-btn:hover {
+  color: var(--text-primary);
+}
+
+.search-error {
+  padding: 6px 12px;
+  background: rgba(255, 68, 68, 0.1);
+  border-bottom: 1px solid rgba(255, 68, 68, 0.3);
+  color: #ff6666;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.search-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.search-status {
+  padding: 16px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 12px;
+}
+
+.search-summary {
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.search-file-result {
+  margin-bottom: 8px;
+}
+
+.search-file-name {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  font-family: 'Fira Code', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-match-item {
+  display: flex;
+  gap: 8px;
+  padding: 2px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+}
+
+.search-match-item:hover {
+  background: var(--bg-hover);
+}
+
+.search-match-line {
+  color: var(--text-muted);
+  min-width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.search-match-content {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.search-highlight {
+  background: rgba(233, 69, 96, 0.35);
+  color: var(--text-primary);
+  font-weight: 600;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.search-more-hint {
+  padding: 2px 12px 2px 52px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
 }

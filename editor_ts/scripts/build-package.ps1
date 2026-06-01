@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    GalEngine Editor — Production Build & Package Script
+    GalEngine Editor -- Production Build & Package Script
 
 .DESCRIPTION
     Full pipeline:
@@ -47,7 +47,7 @@ $env:ELECTRON_MIRROR = "https://npmmirror.com/mirrors/electron/"
 $env:ELECTRON_BUILDER_CACHE = Join-Path $env:LOCALAPPDATA "electron-builder\cache"
 
 Write-Host "===================================" -ForegroundColor Cyan
-Write-Host "  GalEngine Editor — Build Package" -ForegroundColor Cyan
+Write-Host "  GalEngine Editor -- Build Package" -ForegroundColor Cyan
 Write-Host "===================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -70,14 +70,14 @@ if (-not $SkipIcon -and -not (Test-Path $IconPath)) {
     if ($pythonCmd) {
         & $pythonCmd scripts/generate-icon.py
         if ($LASTEXITCODE -ne 0) {
-            Write-Host "  [WARN] Icon generation failed — using default icon." -ForegroundColor Yellow
+            Write-Host "  [WARN] Icon generation failed -- using default icon." -ForegroundColor Yellow
         }
     } else {
-        Write-Host "  [WARN] Python not found — skipping icon generation. Install Pillow and run manually:" -ForegroundColor Yellow
+        Write-Host "  [WARN] Python not found -- skipping icon generation. Install Pillow and run manually:" -ForegroundColor Yellow
         Write-Host "         pip install Pillow && python scripts/generate-icon.py" -ForegroundColor Yellow
     }
 } else {
-    Write-Host "[1/4] Icons: $IconPath — OK" -ForegroundColor Green
+    Write-Host "[1/4] Icons: $IconPath -- OK" -ForegroundColor Green
 }
 
 # ---------------------------------------------------------------------------
@@ -108,10 +108,45 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "  [OK] dist/renderer/" -ForegroundColor Green
 
 # ---------------------------------------------------------------------------
-# Step 4: Package with electron-builder
+# Step 4: Clean stale release output
 # ---------------------------------------------------------------------------
 
-Write-Host "[4/4] Packaging with electron-builder..." -ForegroundColor Yellow
+$StepNum = 4; $TotalSteps = if ($DirOnly) { 5 } else { 5 }
+Write-Host "[$StepNum/$TotalSteps] Cleaning old release output..." -ForegroundColor Yellow
+
+if (Test-Path "release") {
+    # Attempt graceful removal first (wrapped in try to handle locked files)
+    $cleaned = $false
+    try {
+        Remove-Item -Recurse -Force "release" -ErrorAction Stop
+        $cleaned = $true
+    } catch {
+        # Retry once after a short delay (antivirus may release the lock)
+        Start-Sleep -Seconds 2
+        try {
+            Remove-Item -Recurse -Force "release" -ErrorAction Stop
+            $cleaned = $true
+        } catch {
+            Write-Host "  [WARN] Could not delete release/ -- some files may be locked." -ForegroundColor Yellow
+            Write-Host "         Close any GalEngine Editor windows and antivirus, then retry." -ForegroundColor Yellow
+            Write-Host "         You can also manually delete: release\" -ForegroundColor Yellow
+            Write-Host "         Locked file(s): $($_.Exception.Message)" -ForegroundColor DarkYellow
+            exit 1
+        }
+    }
+    if ($cleaned) {
+        Write-Host "  [OK] release/ cleaned" -ForegroundColor Green
+    }
+} else {
+    Write-Host "  [OK] No stale release/ to clean" -ForegroundColor Green
+}
+
+# ---------------------------------------------------------------------------
+# Step 5: Package with electron-builder
+# ---------------------------------------------------------------------------
+
+$StepNum = 5
+Write-Host "[$StepNum/$TotalSteps] Packaging with electron-builder..." -ForegroundColor Yellow
 
 $builderArgs = @(
     "--$Platform",

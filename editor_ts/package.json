@@ -1,6 +1,7 @@
 {
   "name": "galengine-editor",
   "version": "0.2.0",
+  "author": "Hoshino Utaka <utaka.hoshino@gmail.com>", 
   "description": "GalEngine Visual Novel Engine & IDE — TypeScript rewrite",
   "main": "dist/main.js",
   "scripts": {

@@ -80,6 +80,7 @@ export interface VFS {
   writeBinaryFile(path: string, data: Uint8Array): Promise<void>;
   exists(path: string): Promise<boolean>;
   listDir(path: string): Promise<string[]>;
+  listDirDetailed(path: string): Promise<{ name: string; isDirectory: boolean }[]>;
   mkdir(path: string): Promise<void>;
 }
 

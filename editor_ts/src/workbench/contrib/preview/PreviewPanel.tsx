@@ -63,6 +63,7 @@ class InMemoryVFS implements VFS {
     return this._files.has(path) || this._binaries.has(path);
   }
   async listDir(): Promise<string[]> { return []; }
+  async listDirDetailed(): Promise<{ name: string; isDirectory: boolean }[]> { return []; }
   async mkdir(): Promise<void> { /* noop */ }
 }
 
@@ -77,11 +78,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
   const projectRef = useRef<LoadedProject | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { isRunning, setRunning, setPaused, setScene, setError, imageCache, cacheImage } = usePreviewStore();
+  const { isRunning, setRunning, setPaused, setScene, setError, imageCache, cacheImage, sceneName, lastError } = usePreviewStore();
   const [showControls, setShowControls] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  // ---- Lifecycle: init renderer on mount ----
+  // ---- Lifecycle: init renderer on mount (don't start loop until Play) ----
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -114,9 +115,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       }
     };
 
-    renderer.start();
-
-    // Resize observer
+    // Resize observer — only resize, don't force redraw
     const ro = new ResizeObserver(() => {
       if (containerRef.current && renderer) {
         const { width, height } = containerRef.current.getBoundingClientRect();
@@ -133,8 +132,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
 
   // ---- Engine bridge: convert engine events to renderer commands ----
   const setupEngineBridge = useCallback((engine: GalEngine, renderer: PreviewRenderer) => {
+    const addUrlFn = renderer.addObjectUrl.bind(renderer);
     const loadBg = async (image: string) => {
-      const img = await loadPreviewImage(image, projectRef.current, vfs, cacheImage, imageCache, setError);
+      const img = await loadPreviewImage(image, projectRef.current, vfs, cacheImage, imageCache, setError, addUrlFn);
       return img;
     };
 
@@ -155,7 +155,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       const project = projectRef.current;
       if (!project) return;
       const spritePath = `${project.assetDirs.sprites}/${sprite}`;
-      const img = await loadPreviewImage(spritePath, project, vfs, cacheImage, imageCache, setError);
+      const img = await loadPreviewImage(spritePath, project, vfs, cacheImage, imageCache, setError, addUrlFn);
       renderer.showSprite(character, img, (position as SpritePos) || 'center', 'fade', 0.3);
     };
 
@@ -168,7 +168,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       const project = projectRef.current;
       if (!project) return;
       const cgPath = `${project.assetDirs.cgs}/${image}`;
-      const img = await loadPreviewImage(cgPath, project, vfs, cacheImage, imageCache, setError);
+      const img = await loadPreviewImage(cgPath, project, vfs, cacheImage, imageCache, setError, addUrlFn);
       renderer.showCG(img, duration);
     };
 
@@ -270,6 +270,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
         cfg.project.author ? '#c8b4ff' : '#ffffff',
       );
 
+      // Start render loop
+      renderer.start();
+
       // Start scene
       await engine.start(firstScene);
       setScene(parsedScene.sceneName || firstScene, 0);
@@ -283,21 +286,48 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
   // ---- Stop button ----
   const handleStop = useCallback(() => {
     const renderer = rendererRef.current;
+    const engine = engineRef.current;
+
     if (renderer) {
+      // 1. Visual cleanup + state reset while _playing is still true
+      renderer.drawBlank();
       renderer.reset();
-      renderer.hideDialogue();
+
+      // 2. Stop the loop LAST — _playing ← false prevents _markDirty()
+      //    from restarting the loop (root cause of memory leak)
+      renderer.stop();
+    }
+
+    // 3. Dispose engine (releases scene manager, event emitters, etc.)
+    if (engine) {
+      engine.dispose();
     }
     engineRef.current = null;
+
     setRunning(false);
     setIsPaused(false);
-  }, [setRunning]);
+    setPaused(false);
+
+    // 4. Clear image cache AFTER renderer.releaseObjectUrls() in stop()
+    usePreviewStore.getState().clearCache();
+  }, [setRunning, setPaused]);
 
   // ---- Pause / Resume ----
   const handlePauseToggle = useCallback(() => {
+    const renderer = rendererRef.current;
+    if (!renderer) return;
     setIsPaused((p) => {
-      if (!p) setPaused(true);
-      else setPaused(false);
-      return !p;
+      if (!p) {
+        // Pause: stop the render loop
+        renderer.stop();
+        setPaused(true);
+        return true;
+      } else {
+        // Resume: restart the render loop
+        renderer.start();
+        setPaused(false);
+        return false;
+      }
     });
   }, [setPaused]);
 
@@ -347,7 +377,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
         </div>
         <div className="preview-toolbar-right">
           <span className="preview-scene-name">
-            {usePreviewStore.getState().sceneName || 'Preview'}
+            {sceneName || 'Preview'}
           </span>
         </div>
       </div>
@@ -358,11 +388,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       </div>
 
       {/* Error overlay */}
-      {usePreviewStore.getState().lastError && (
+      {lastError && (
         <div className="preview-error-overlay">
           <div className="preview-error-box">
             <strong>Preview Error</strong>
-            <p>{usePreviewStore.getState().lastError}</p>
+            <p>{lastError}</p>
             <button onClick={() => setError(null)}>Dismiss</button>
           </div>
         </div>
@@ -382,6 +412,7 @@ async function loadPreviewImage(
   cacheImageFn: (key: string, img: HTMLImageElement) => void,
   imageCache: Record<string, HTMLImageElement>,
   setError: (err: string | null) => void,
+  addObjectUrl?: (url: string) => void,
 ): Promise<HTMLImageElement | null> {
   if (!assetPath) return null;
 
@@ -393,6 +424,7 @@ async function loadPreviewImage(
     const data = await vfs.readBinaryFile(assetPath);
     const blob = new Blob([data as BlobPart]);
     const url = URL.createObjectURL(blob);
+    addObjectUrl?.(url);
 
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();

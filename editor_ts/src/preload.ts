@@ -19,8 +19,10 @@ interface VFSAPI {
   writeBinaryFile(path: string, data: ArrayBuffer): Promise<void>;
   exists(path: string): Promise<boolean>;
   listDir(path: string): Promise<string[]>;
+  listDirDetailed(path: string): Promise<DirEntry[]>;
   mkdir(path: string): Promise<void>;
   stat(path: string): Promise<FileStat>;
+  delete(path: string): Promise<void>;
 }
 
 interface FileStat {
@@ -28,6 +30,11 @@ interface FileStat {
   isFile: boolean;
   size: number;
   mtimeMs: number;
+}
+
+interface DirEntry {
+  name: string;
+  isDirectory: boolean;
 }
 
 interface DialogAPI {
@@ -38,6 +45,16 @@ interface DialogAPI {
 interface PlatformAPI {
   pathSep: Promise<string>;
   homeDir: Promise<string>;
+}
+
+interface EditorSettings {
+  autoSave: { enabled: boolean; delay: number };
+  language: 'zh-CN' | 'ja-JP' | 'en-US';
+}
+
+interface SettingsAPI {
+  load(): Promise<EditorSettings>;
+  save(settings: EditorSettings): Promise<void>;
 }
 
 interface MenuEvents {
@@ -52,6 +69,7 @@ interface GalEngineAPI {
   dialog: DialogAPI;
   platform: PlatformAPI;
   menu: MenuEvents;
+  settings: SettingsAPI;
 }
 
 // ---------------------------------------------------------------------------
@@ -66,8 +84,14 @@ const api: GalEngineAPI = {
     writeBinaryFile: (p, d) => ipcRenderer.invoke('fs:writeBinaryFile', p, d),
     exists: (p) => ipcRenderer.invoke('fs:exists', p),
     listDir: (p) => ipcRenderer.invoke('fs:listDir', p),
+    listDirDetailed: (p) => ipcRenderer.invoke('fs:listDirDetailed', p),
     mkdir: (p) => ipcRenderer.invoke('fs:mkdir', p),
     stat: (p) => ipcRenderer.invoke('fs:stat', p),
+    delete: (p) => ipcRenderer.invoke('fs:delete', p),
+  },
+  settings: {
+    load: () => ipcRenderer.invoke('settings:load'),
+    save: (s) => ipcRenderer.invoke('settings:save', s),
   },
 
   dialog: {

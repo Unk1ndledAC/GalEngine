@@ -17,8 +17,14 @@ export const IPC = {
   FS_WRITE_BINARY: 'fs:writeBinaryFile',
   FS_EXISTS: 'fs:exists',
   FS_LIST_DIR: 'fs:listDir',
+  FS_LIST_DIR_DETAILED: 'fs:listDirDetailed',
   FS_MKDIR: 'fs:mkdir',
   FS_STAT: 'fs:stat',
+  FS_DELETE: 'fs:delete',
+
+  // Settings
+  SETTINGS_LOAD: 'settings:load',
+  SETTINGS_SAVE: 'settings:save',
 
   // Dialogs
   DIALOG_OPEN_FILE: 'dialog:openFile',
@@ -46,8 +52,12 @@ export interface IpcChannelMap {
   [IPC.FS_WRITE_BINARY]: { args: [string, ArrayBuffer]; result: void };
   [IPC.FS_EXISTS]: { args: [string]; result: boolean };
   [IPC.FS_LIST_DIR]: { args: [string]; result: string[] };
+  [IPC.FS_LIST_DIR_DETAILED]: { args: [string]; result: DirEntry[] };
   [IPC.FS_MKDIR]: { args: [string]; result: void };
   [IPC.FS_STAT]: { args: [string]; result: FileStat };
+  [IPC.FS_DELETE]: { args: [string]; result: void };
+  [IPC.SETTINGS_LOAD]: { args: []; result: EditorSettings };
+  [IPC.SETTINGS_SAVE]: { args: [EditorSettings]; result: void };
   [IPC.DIALOG_OPEN_FILE]: { args: [DialogOpenOptions?]; result: string | null };
   [IPC.DIALOG_SAVE_FILE]: { args: [string?]; result: string | null };
   [IPC.PLATFORM_PATH_SEP]: { args: []; result: string };
@@ -61,9 +71,28 @@ export interface FileStat {
   mtimeMs: number;
 }
 
+export interface DirEntry {
+  name: string;
+  isDirectory: boolean;
+}
+
 export interface DialogOpenOptions {
   filters?: { name: string; extensions: string[] }[];
 }
+
+/** Persistent editor settings stored in ~/.galengine/settings.json */
+export interface EditorSettings {
+  autoSave: {
+    enabled: boolean;
+    delay: number; // milliseconds, default 10000
+  };
+  language: 'zh-CN' | 'ja-JP' | 'en-US';
+}
+
+export const DEFAULT_SETTINGS: EditorSettings = {
+  autoSave: { enabled: true, delay: 10000 },
+  language: 'en-US',
+};
 
 // ---------------------------------------------------------------------------
 // Renderer-side type declaration for window.galengine
@@ -79,10 +108,16 @@ export interface GalEngineBridge {
     listDir(path: string): Promise<string[]>;
     mkdir(path: string): Promise<void>;
     stat(path: string): Promise<FileStat>;
+    listDirDetailed(path: string): Promise<DirEntry[]>;
+    delete(path: string): Promise<void>;
   };
   dialog: {
     openFile(options?: DialogOpenOptions): Promise<string | null>;
     saveFile(defaultPath?: string): Promise<string | null>;
+  };
+  settings: {
+    load(): Promise<EditorSettings>;
+    save(settings: EditorSettings): Promise<void>;
   };
   platform: {
     pathSep: Promise<string>;
