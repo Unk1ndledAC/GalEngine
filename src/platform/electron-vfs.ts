@@ -23,13 +23,41 @@ export class ElectronVFS implements VFS {
     return window.galengine;
   }
 
+  /** Timeout wrapper for IPC calls that may never settle. */
+  private _withTimeout<T>(promise: Promise<T>, label: string, timeoutMs = 8000): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+        }
+      }, timeoutMs);
+      promise
+        .then((v) => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            resolve(v);
+          }
+        })
+        .catch((e) => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            reject(e);
+          }
+        });
+    });
+  }
+
   async readTextFile(path: string): Promise<string> {
-    return this._bridge.fs.readTextFile(path);
+    return this._withTimeout(this._bridge.fs.readTextFile(path), `readTextFile(${path})`);
   }
 
   async readBinaryFile(path: string): Promise<Uint8Array> {
-    const buf = await this._bridge.fs.readBinaryFile(path);
-    return new Uint8Array(buf);
+    const bufPromise = this._bridge.fs.readBinaryFile(path);
+    return this._withTimeout(bufPromise.then((buf) => new Uint8Array(buf)), `readBinaryFile(${path})`);
   }
 
   async writeTextFile(path: string, content: string): Promise<void> {
@@ -54,9 +82,22 @@ export class ElectronVFS implements VFS {
     await this._bridge.fs.mkdir(path);
   }
 
+  /** List directory entries with name + isDirectory in a single IPC call. */
+  async listDirDetailed(path: string): Promise<{ name: string; isDirectory: boolean }[]> {
+    return this._withTimeout(
+      this._bridge.fs.listDirDetailed(path),
+      `listDirDetailed(${path})`
+    );
+  }
+
   /** Get detailed stats for a file or directory. */
   async stat(path: string): Promise<FileStat> {
     return this._bridge.fs.stat(path);
+  }
+
+  /** Delete a file or directory (recursively). */
+  async delete(path: string): Promise<void> {
+    await this._bridge.fs.delete(path);
   }
 }
 

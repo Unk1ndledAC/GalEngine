@@ -42,6 +42,7 @@ export interface EditorState {
   closeAllFiles: () => void;
   setActive: (path: string) => void;
   updateContent: (path: string, content: string) => void;
+  setFileContent: (path: string, content: string) => void;
   markClean: (path: string) => void;
   markDirty: (path: string) => void;
 }
@@ -140,6 +141,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const dirty = new Set(get().dirtyFiles);
     dirty.add(path);
     set({ dirtyFiles: dirty });
+  },
+
+  /** Set file content and clear loading flag — used by async file loader. */
+  setFileContent: (path, content) => {
+    set((s) => ({
+      fileContents: { ...s.fileContents, [path]: content },
+      tabs: s.tabs.map((t) => (t.id === path ? { ...t, loading: false } : t)),
+    }));
   },
 
   markClean: (path) => {

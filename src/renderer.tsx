@@ -9,6 +9,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './workbench/App';
 import { useProjectStore } from './workbench/contrib/project/ProjectStore';
+import { saveActiveFile } from './workbench/contrib/editor/MonacoEditor';
 import './workbench/styles/global.css';
 
 const container = document.getElementById('root');
@@ -42,5 +43,15 @@ if (galApi?.menu) {
   galApi.menu.onNewProject(() => {
     // Clear current project to force WelcomeScreen
     useProjectStore.getState().setProjectPath(null);
+  });
+
+  // Save (Ctrl+S) — delegate to the editor's save helper
+  galApi.menu.onSave(() => {
+    saveActiveFile();
+  });
+
+  // Save As (Ctrl+Shift+S) — for now, same as Save
+  galApi.menu.onSaveAs(() => {
+    saveActiveFile();
   });
 }

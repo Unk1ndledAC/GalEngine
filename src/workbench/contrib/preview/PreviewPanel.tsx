@@ -16,6 +16,7 @@ import { ProjectLoader, type VFS, type LoadedProject } from '../../../engine/loa
 import { SceneParser } from '../../../engine/parser';
 import { ConfigManager } from '../../../engine/config';
 import { usePreviewStore } from './PreviewStore';
+import { useTranslation } from '@i18n/useTranslation';
 import type { CommandType, DialogueData, ChoiceData, BackgroundData } from '../../../engine/types';
 import type { SpritePos } from '../../../engine/preview/PreviewRenderer';
 
@@ -63,6 +64,7 @@ class InMemoryVFS implements VFS {
     return this._files.has(path) || this._binaries.has(path);
   }
   async listDir(): Promise<string[]> { return []; }
+  async listDirDetailed(): Promise<{ name: string; isDirectory: boolean }[]> { return []; }
   async mkdir(): Promise<void> { /* noop */ }
 }
 
@@ -76,12 +78,15 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
   const engineRef = useRef<GalEngine | null>(null);
   const projectRef = useRef<LoadedProject | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Guard against concurrent handlePlay invocations (e.g. rapid double-click)
+  const playingRef = useRef(false);
 
-  const { isRunning, setRunning, setPaused, setScene, setError, imageCache, cacheImage } = usePreviewStore();
+  const { isRunning, setRunning, setPaused, setScene, setError, cacheImage, sceneName, lastError } = usePreviewStore();
   const [showControls, setShowControls] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const { t } = useTranslation();
 
-  // ---- Lifecycle: init renderer on mount ----
+  // ---- Lifecycle: init renderer on mount (don't start loop until Play) ----
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -114,9 +119,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       }
     };
 
-    renderer.start();
-
-    // Resize observer
+    // Resize observer — only resize, don't force redraw
     const ro = new ResizeObserver(() => {
       if (containerRef.current && renderer) {
         const { width, height } = containerRef.current.getBoundingClientRect();
@@ -126,15 +129,25 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
     if (containerRef.current) ro.observe(containerRef.current);
 
     return () => {
-      renderer.stop();
+      // Defensive: stop() is safe to call multiple times;
+      // dispose() checks _disposed flag internally.
+      const r = rendererRef.current;
+      if (r) { r.stop(); r.dispose(); }
       ro.disconnect();
     };
   }, [setError]);
 
   // ---- Engine bridge: convert engine events to renderer commands ----
   const setupEngineBridge = useCallback((engine: GalEngine, renderer: PreviewRenderer) => {
+    const addUrlFn = renderer.addObjectUrl.bind(renderer);
     const loadBg = async (image: string) => {
-      const img = await loadPreviewImage(image, projectRef.current, vfs, cacheImage, imageCache, setError);
+      // Read imageCache from store at call time to avoid stale-closure cache misses
+      const img = await loadPreviewImage(
+        image, projectRef.current, vfs,
+        cacheImage,
+        usePreviewStore.getState().imageCache,
+        setError, addUrlFn,
+      );
       return img;
     };
 
@@ -155,7 +168,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       const project = projectRef.current;
       if (!project) return;
       const spritePath = `${project.assetDirs.sprites}/${sprite}`;
-      const img = await loadPreviewImage(spritePath, project, vfs, cacheImage, imageCache, setError);
+      const img = await loadPreviewImage(
+        spritePath, project, vfs,
+        cacheImage,
+        usePreviewStore.getState().imageCache,
+        setError, addUrlFn,
+      );
       renderer.showSprite(character, img, (position as SpritePos) || 'center', 'fade', 0.3);
     };
 
@@ -168,7 +186,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       const project = projectRef.current;
       if (!project) return;
       const cgPath = `${project.assetDirs.cgs}/${image}`;
-      const img = await loadPreviewImage(cgPath, project, vfs, cacheImage, imageCache, setError);
+      const img = await loadPreviewImage(
+        cgPath, project, vfs,
+        cacheImage,
+        usePreviewStore.getState().imageCache,
+        setError, addUrlFn,
+      );
       renderer.showCG(img, duration);
     };
 
@@ -204,14 +227,51 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
     engine.sceneManager.onStopBGM = async () => {};
     engine.sceneManager.onSFX = async () => {};
     engine.sceneManager.onVoice = async () => {};
-  }, [vfs, cacheImage, imageCache, setError, setRunning]);
+  }, [vfs, cacheImage, setError, setRunning]);
 
   // ---- Play button ----
   const handlePlay = useCallback(async () => {
+    // Prevent concurrent play invocations (rapid double-click, etc.)
+    if (playingRef.current) return;
+    playingRef.current = true;
     try {
       setError(null);
-      const renderer = rendererRef.current;
-      if (!renderer) return;
+
+      // Recreate renderer if it was disposed by a previous Stop.
+      // After handleStop → renderer.dispose(), the canvas is zeroed and
+      // the renderer instance is dead — we must create a new one.
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      let renderer = rendererRef.current;
+      if (!renderer || (renderer as any)._disposed) {
+        renderer = new PreviewRenderer(canvas);
+        renderer.setResolution(1280, 720);
+        // Re-attach interaction handlers for the new renderer
+        renderer.onClick = async () => {
+          const engine = engineRef.current;
+          if (engine && engine.state === EngineState.Running) {
+            try { await engine.advance(); }
+            catch (e) { setError((e as Error).message); }
+          }
+        };
+        renderer.onChoice = async (target: string) => {
+          const engine = engineRef.current;
+          if (engine && engine.state === EngineState.Running) {
+            try { await engine.selectChoice(target); }
+            catch (e) { setError((e as Error).message); }
+          }
+        };
+        rendererRef.current = renderer;
+      }
+
+      // Dispose any previously running engine before creating a new one.
+      // Without this, the old engine's async callbacks keep a closure
+      // reference to the old VFS/store actions, causing a memory leak.
+      if (engineRef.current) {
+        engineRef.current.dispose();
+        engineRef.current = null;
+      }
 
       // Create engine
       const memVfs = new InMemoryVFS();
@@ -253,7 +313,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       // Get first scene
       const firstScene = sceneIds[0];
       if (!firstScene) {
-        setError('No scenes found in project.');
+        setError(t('preview.noScenes'));
         return;
       }
 
@@ -270,6 +330,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
         cfg.project.author ? '#c8b4ff' : '#ffffff',
       );
 
+      // Start render loop
+      renderer.start();
+
       // Start scene
       await engine.start(firstScene);
       setScene(parsedScene.sceneName || firstScene, 0);
@@ -277,27 +340,64 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
     } catch (e) {
       setError((e as Error).message);
       setRunning(false);
+    } finally {
+      playingRef.current = false;
     }
   }, [projectPath, vfs, setError, setRunning, setScene, setupEngineBridge]);
 
   // ---- Stop button ----
   const handleStop = useCallback(() => {
     const renderer = rendererRef.current;
+    const engine = engineRef.current;
+
     if (renderer) {
+      // 1. Visual cleanup + state reset while _playing is still true
+      renderer.drawBlank();
       renderer.reset();
-      renderer.hideDialogue();
+
+      // 2. Stop the loop LAST — _playing ← false prevents _markDirty()
+      //    from restarting the loop (root cause of memory leak)
+      renderer.stop();
+
+      // 3. Full dispose to release GPU resources (canvas zeroed, offscreen freed)
+      renderer.dispose();
+      rendererRef.current = null;
+    }
+
+    // 4. Dispose engine (releases scene manager, event emitters, etc.)
+    if (engine) {
+      engine.dispose();
     }
     engineRef.current = null;
+    projectRef.current = null;
+
     setRunning(false);
     setIsPaused(false);
-  }, [setRunning]);
+    setPaused(false);
+
+    // 5. Clear image cache AFTER renderer.releaseObjectUrls() in stop()
+    usePreviewStore.getState().clearCache();
+  }, [setRunning, setPaused]);
 
   // ---- Pause / Resume ----
   const handlePauseToggle = useCallback(() => {
+    const renderer = rendererRef.current;
+    if (!renderer) return;
     setIsPaused((p) => {
-      if (!p) setPaused(true);
-      else setPaused(false);
-      return !p;
+      if (!p) {
+        // Pause: suspend the render loop WITHOUT releasing resources.
+        // Using renderer.pause() instead of renderer.stop() is critical:
+        // stop() would revoke objectUrls and clear _playing, making
+        // resume() unable to restart with the same assets.
+        renderer.pause();
+        setPaused(true);
+        return true;
+      } else {
+        // Resume: restart the render loop from where it left off.
+        renderer.resume();
+        setPaused(false);
+        return false;
+      }
     });
   }, [setPaused]);
 
@@ -316,7 +416,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
             className={`preview-btn ${isRunning ? 'active' : ''}`}
             onClick={handlePlay}
             disabled={isRunning}
-            title="Play"
+            title={t('preview.play')}
           >
             ▶
           </button>
@@ -324,7 +424,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
             className="preview-btn"
             onClick={handleStop}
             disabled={!isRunning}
-            title="Stop"
+            title={t('preview.stop')}
           >
             ■
           </button>
@@ -332,7 +432,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
             className="preview-btn"
             onClick={handlePauseToggle}
             disabled={!isRunning}
-            title="Pause/Resume"
+            title={t('preview.pauseResume')}
           >
             {isPaused ? '▶' : '⏸'}
           </button>
@@ -340,14 +440,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
             className="preview-btn"
             onClick={handleSkip}
             disabled={!isRunning}
-            title="Skip text"
+            title={t('preview.skipText')}
           >
             ⏭
           </button>
         </div>
         <div className="preview-toolbar-right">
           <span className="preview-scene-name">
-            {usePreviewStore.getState().sceneName || 'Preview'}
+            {sceneName || t('preview.preview')}
           </span>
         </div>
       </div>
@@ -358,12 +458,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       </div>
 
       {/* Error overlay */}
-      {usePreviewStore.getState().lastError && (
+      {lastError && (
         <div className="preview-error-overlay">
           <div className="preview-error-box">
-            <strong>Preview Error</strong>
-            <p>{usePreviewStore.getState().lastError}</p>
-            <button onClick={() => setError(null)}>Dismiss</button>
+            <strong>{t('preview.error')}</strong>
+            <p>{lastError}</p>
+            <button onClick={() => setError(null)}>{t('preview.dismiss')}</button>
           </div>
         </div>
       )}
@@ -375,6 +475,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
 // Asset loading helper
 // =========================================================================
 
+// Cache for placeholder images (avoids recreating canvas + Image for same path)
+const _placeholderCache = new Map<string, HTMLImageElement>();
+
 async function loadPreviewImage(
   assetPath: string,
   project: LoadedProject | null,
@@ -382,6 +485,7 @@ async function loadPreviewImage(
   cacheImageFn: (key: string, img: HTMLImageElement) => void,
   imageCache: Record<string, HTMLImageElement>,
   setError: (err: string | null) => void,
+  addObjectUrl?: (url: string) => void,
 ): Promise<HTMLImageElement | null> {
   if (!assetPath) return null;
 
@@ -393,6 +497,7 @@ async function loadPreviewImage(
     const data = await vfs.readBinaryFile(assetPath);
     const blob = new Blob([data as BlobPart]);
     const url = URL.createObjectURL(blob);
+    addObjectUrl?.(url);
 
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
@@ -404,15 +509,18 @@ async function loadPreviewImage(
     cacheImageFn(assetPath, img);
     return img;
   } catch {
-    // Fallback: generate placeholder colored rectangle
+    // Fallback: generate placeholder colored rectangle (cached — no repeated canvas allocation)
     console.warn(`Image not found: ${assetPath}, using placeholder`);
-    const placeholder = generatePlaceholder(assetPath);
+    const placeholder = getOrCreatePlaceholder(assetPath);
     cacheImageFn(assetPath, placeholder);
     return placeholder;
   }
 }
 
-function generatePlaceholder(path: string): HTMLImageElement {
+function getOrCreatePlaceholder(path: string): HTMLImageElement {
+  const cached = _placeholderCache.get(path);
+  if (cached) return cached;
+
   const canvas = document.createElement('canvas');
   canvas.width = 800;
   canvas.height = 600;
@@ -445,5 +553,7 @@ function generatePlaceholder(path: string): HTMLImageElement {
   // Create image from canvas
   const img = new Image();
   img.src = canvas.toDataURL();
+
+  _placeholderCache.set(path, img);
   return img;
 }

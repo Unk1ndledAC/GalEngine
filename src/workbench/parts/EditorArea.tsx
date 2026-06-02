@@ -12,6 +12,7 @@ import { useEditorStore } from '../contrib/editor/EditorStore';
 import { MonacoEditor } from '../contrib/editor/MonacoEditor';
 import { PreviewPanel } from '../contrib/preview/PreviewPanel';
 import { WelcomeScreen } from '../contrib/welcome/WelcomeScreen';
+import { useTranslation } from '@i18n/useTranslation';
 import type { VFS } from '../../engine/loader';
 
 const PREVIEW_TAB_ID = '__galengine_preview__';
@@ -37,6 +38,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
 
   const [showPreview, setShowPreview] = useState(false);
   const [previewActive, setPreviewActive] = useState(false);
+  const { t } = useTranslation();
 
   const handleTabClose = useCallback(
     (e: React.MouseEvent, path: string) => {
@@ -47,12 +49,16 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
   );
 
   const handlePreviewClick = useCallback(() => {
-    if (projectPath && vfs) {
+    if (!projectPath || !vfs) return;
+    if (previewActive) {
+      // Toggle preview OFF — switch back to code editor
+      setPreviewActive(false);
+    } else {
       setShowPreview(true);
       setPreviewActive(true);
       setActive(''); // deselect code tabs
     }
-  }, [projectPath, vfs, setActive]);
+  }, [projectPath, vfs, previewActive, setActive]);
 
   const handleCodeTabClick = useCallback((tabId: string) => {
     setPreviewActive(false);
@@ -77,9 +83,9 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
       <div className="editor-area">
         <div className="monaco-placeholder">
           <div className="monaco-empty-icon">📁</div>
-          <p>Project: {projectPath.split('\\').pop() || projectPath}</p>
+          <p>{t('editor.project')} {projectPath.split('\\').pop() || projectPath}</p>
           <p className="muted">
-            Click a file in the Explorer to open it, or use Ctrl+O.
+            {t('editor.clickToOpen')}
           </p>
         </div>
       </div>
@@ -109,7 +115,7 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
             <button
               className="tab-close"
               onClick={(e) => handleTabClose(e, tab.id)}
-              title="Close"
+              title={t('editor.closeTab')}
             >
               ×
             </button>
@@ -122,9 +128,9 @@ export const EditorArea: React.FC<EditorAreaProps> = ({
             <button
               className={`preview-toggle-btn ${previewActive ? 'active' : ''}`}
               onClick={handlePreviewClick}
-              title={previewActive ? 'Switch to Code' : 'Preview Game'}
+              title={previewActive ? t('editor.closePreview') : t('editor.previewGame')}
             >
-              ▶ Preview
+              {previewActive ? t('editor.closePreviewBtn') : t('editor.previewBtn')}
             </button>
           </div>
         )}

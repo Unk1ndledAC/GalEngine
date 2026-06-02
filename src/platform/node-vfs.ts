@@ -46,6 +46,12 @@ export class NodeVFS implements VFS {
     return readdir(path);
   }
 
+  async listDirDetailed(path: string): Promise<{ name: string; isDirectory: boolean }[]> {
+    const { readdir } = await import('fs/promises');
+    const entries = await readdir(path, { withFileTypes: true });
+    return entries.map((e) => ({ name: e.name, isDirectory: e.isDirectory() }));
+  }
+
   async mkdir(path: string): Promise<void> {
     const { mkdir: mkdirAsync } = await import('fs/promises');
     await mkdirAsync(path, { recursive: true });

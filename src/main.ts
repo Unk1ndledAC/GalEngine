@@ -11,7 +11,7 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell } from 'electron';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { readdirSync, existsSync } from 'node:fs';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -70,95 +70,9 @@ function createWindow(): BrowserWindow {
 }
 
 // ---------------------------------------------------------------------------
-// Application Menu
+// Application Menu — managed entirely in React (MenuBar.tsx).
+// Hide the native menu bar to avoid duplication.
 // ---------------------------------------------------------------------------
-
-function createMenu(): void {
-  const template: Electron.MenuItemConstructorOptions[] = [
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'New Project',
-          accelerator: 'Ctrl+N',
-          click: () => win?.webContents.send('menu:new-project'),
-        },
-        {
-          label: 'Open Project…',
-          accelerator: 'Ctrl+O',
-          click: async () => {
-            const result = await dialog.showOpenDialog(win!, {
-              title: 'Open GalEngine Project',
-              properties: ['openDirectory'],
-            });
-            if (!result.canceled && result.filePaths.length > 0) {
-              win?.webContents.send('menu:open-project', result.filePaths[0]);
-            }
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Save',
-          accelerator: 'Ctrl+S',
-          click: () => win?.webContents.send('menu:save'),
-        },
-        {
-          label: 'Save As…',
-          accelerator: 'Ctrl+Shift+S',
-          click: () => win?.webContents.send('menu:save-as'),
-        },
-        { type: 'separator' },
-        { role: 'quit' },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' },
-      ],
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' },
-      ],
-    },
-    {
-      label: 'Help',
-      submenu: [
-        {
-          label: 'About GalEngine Editor',
-          click: () => {
-            void dialog.showMessageBox(win!, {
-              type: 'info',
-              title: 'About GalEngine Editor',
-              message: 'GalEngine Editor v0.2.0',
-              detail:
-                'A Visual Novel Engine & IDE built with Electron + React + Monaco.',
-            });
-          },
-        },
-      ],
-    },
-  ];
-
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
-}
 
 // ---------------------------------------------------------------------------
 // IPC Handlers — File System
@@ -203,6 +117,12 @@ function registerIpcHandlers(): void {
     return fs.readdir(dirPath);
   });
 
+  // List directory with file type info (avoids N separate stat() calls)
+  ipcMain.handle('fs:listDirDetailed', async (_event, dirPath: string) => {
+    const entries = readdirSync(dirPath, { withFileTypes: true });
+    return entries.map((e) => ({ name: e.name, isDirectory: e.isDirectory() }));
+  });
+
   // Create directory
   ipcMain.handle('fs:mkdir', async (_event, dirPath: string) => {
     await fs.mkdir(dirPath, { recursive: true });
@@ -230,6 +150,15 @@ function registerIpcHandlers(): void {
     return result.canceled ? null : result.filePaths[0];
   });
 
+  // Show open directory dialog (for "Open Project")
+  ipcMain.handle('dialog:openDirectory', async (_event, title?: string) => {
+    const result = await dialog.showOpenDialog(win!, {
+      title: title ?? 'Open Project',
+      properties: ['openDirectory'],
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
+
   // Show save file dialog
   ipcMain.handle('dialog:saveFile', async (_event, defaultPath?: string) => {
     const result = await dialog.showSaveDialog(win!, {
@@ -242,9 +171,65 @@ function registerIpcHandlers(): void {
     return result.canceled ? null : result.filePath;
   });
 
+  // Show about dialog
+  ipcMain.handle('dialog:about', async () => {
+    await dialog.showMessageBox(win!, {
+      type: 'info',
+      title: 'About GalEngine Editor',
+      message: 'GalEngine Editor v0.2.0',
+      detail: 'A Visual Novel Engine & IDE built with Electron + React + Monaco.',
+    });
+  });
+
+  // Toggle DevTools (requested by React menu)
+  ipcMain.on('view:toggleDevTools', () => {
+    win?.webContents.toggleDevTools();
+  });
+
   // Get path separator for the platform
   ipcMain.handle('platform:pathSep', () => path.sep);
   ipcMain.handle('platform:homeDir', () => app.getPath('home'));
+
+  // ---- Settings ----
+
+  const settingsDir = path.join(app.getPath('home'), '.galengine');
+  const settingsPath = path.join(settingsDir, 'settings.json');
+
+  function getDefaultSettings() {
+    const locale = app.getLocale();
+    let language: 'zh-CN' | 'ja-JP' | 'en-US' = 'en-US';
+    if (locale.startsWith('zh')) language = 'zh-CN';
+    else if (locale.startsWith('ja')) language = 'ja-JP';
+    return {
+      autoSave: { enabled: true, delay: 10000 },
+      language,
+    };
+  }
+
+  ipcMain.handle('settings:load', async () => {
+    try {
+      const raw = await fs.readFile(settingsPath, 'utf-8');
+      return JSON.parse(raw);
+    } catch {
+      return getDefaultSettings();
+    }
+  });
+
+  ipcMain.handle('settings:save', async (_event, settings: { autoSave: { enabled: boolean; delay: number }; language: string }) => {
+    await fs.mkdir(settingsDir, { recursive: true });
+    await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
+  });
+
+  // ---- Delete ----
+
+  ipcMain.handle('fs:delete', async (_event, filePath: string) => {
+    const stat = await fs.stat(filePath);
+    if (stat.isDirectory()) {
+      await fs.rm(filePath, { recursive: true, force: true });
+    } else {
+      await fs.unlink(filePath);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -253,7 +238,11 @@ function registerIpcHandlers(): void {
 
 app.whenReady().then(() => {
   registerIpcHandlers();
-  createMenu();
+  // Hide native Electron menu bar — the React MenuBar component handles all menus.
+  // On macOS the system menu is mandatory; only hide it on Windows/Linux.
+  if (process.platform !== 'darwin') {
+    Menu.setApplicationMenu(null);
+  }
   createWindow();
 
   app.on('activate', () => {

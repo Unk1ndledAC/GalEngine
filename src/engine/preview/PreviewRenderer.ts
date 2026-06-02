@@ -71,6 +71,26 @@ export class PreviewRenderer {
   private _rafId = 0;
   private _lastTime = 0;
   private _running = false;
+  private _playing = false;   // user intent: set by start(), cleared by stop()
+  private _dirty = true;
+  private _disposed = false;
+
+  // Object URLs created for images — must be revoked on stop/dispose
+  private _objectUrls: string[] = [];
+
+  // Offscreen canvas for double-buffering (prevents flicker)
+  private _offscreen: HTMLCanvasElement | null = null;
+  private _offscreenCtx: CanvasRenderingContext2D | null = null;
+  private _offscreenW = -1;
+  private _offscreenH = -1;
+
+  // Cached values to avoid per-frame allocations
+  private _defaultBgGradient: CanvasGradient | null = null;
+  private _defaultBgResW = -1;
+  private _defaultBgResH = -1;
+  private _resW = 0;  // cached resolution width
+  private _resH = 0;  // cached resolution height
+  private _sortedSprites: PreviewSprite[] = []; // cached sorted sprite array
 
   // Click callback
   onClick?: () => void;
@@ -81,19 +101,112 @@ export class PreviewRenderer {
   // Hit testing for choices
   private _choiceRects: { x: number; y: number; w: number; h: number; target: string }[] = [];
 
+  // Bound event handlers (so they can be removed on dispose)
+  private _boundOnClick: ((e: MouseEvent) => void) | null = null;
+  private _boundOnMouseMove: ((e: MouseEvent) => void) | null = null;
+
   constructor(canvas: HTMLCanvasElement) {
     this._canvas = canvas;
     this._ctx = canvas.getContext('2d')!;
     this._state = this._createDefaultState();
 
-    // Click handler
-    this._canvas.addEventListener('click', (e) => {
+    // Attach event handlers (idempotent, detached by stop/dispose, re-attached by start)
+    this._attachEvents();
+  }
+
+  // ---- Public API ----
+
+  /** Start the render loop and attach input events. */
+  start(): void {
+    if (this._playing || this._disposed) return;
+    this._playing = true;
+    this._running = true;
+    this._lastTime = performance.now();
+    this._attachEvents();
+    this._loop();
+  }
+
+  /** Stop the render loop, release resources, detach events. */
+  stop(): void {
+    this._playing = false;
+    this._running = false;
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = 0;
+    }
+    this._dirty = false;
+    this._transitions = [];
+    this._releaseObjectUrls();
+    this._detachEvents();
+  }
+
+  /**
+   * Pause the render loop without releasing resources.
+   * Unlike stop(), pause() keeps _playing = true and retains objectUrls
+   * so that resume() can restart the loop with all assets intact.
+   */
+  pause(): void {
+    if (!this._playing || this._disposed) return;
+    this._running = false;
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = 0;
+    }
+  }
+
+  /**
+   * Resume after pause(). No-op if already running or not playing.
+   */
+  resume(): void {
+    if (!this._playing || this._running || this._disposed) return;
+    this._running = true;
+    this._lastTime = performance.now();
+    this._markDirty();
+    this._loop();
+  }
+
+  /** Completely dispose this renderer — call once, never reuse. */
+  dispose(): void {
+    if (this._disposed) return;
+    this._disposed = true;
+    this.stop();
+    this._detachEvents();
+    // Zero out the canvas to force the browser to release the GPU backbuffer.
+    // Without this, a 1280×720 (or larger) RGBA texture stays in VRAM forever.
+    this._canvas.width = 0;
+    this._canvas.height = 0;
+    this._offscreen = null;
+    this._offscreenCtx = null;
+    // Release all internal state references so GC can collect them
+    this._state.sprites.clear();
+    this._state.background = null;
+    this._state.cgImage = null;
+    this._sortedSprites = [];
+    this._defaultBgGradient = null;
+    this._choiceRects = [];
+  }
+
+  /** Remove canvas event listeners. Safe to call multiple times. */
+  private _detachEvents(): void {
+    if (this._boundOnClick) {
+      this._canvas.removeEventListener('click', this._boundOnClick);
+      this._boundOnClick = null;
+    }
+    if (this._boundOnMouseMove) {
+      this._canvas.removeEventListener('mousemove', this._boundOnMouseMove);
+      this._boundOnMouseMove = null;
+    }
+  }
+
+  /** Attach canvas event listeners (idempotent — safe to call after _detachEvents). */
+  private _attachEvents(): void {
+    if (this._boundOnClick) return; // already attached
+    this._boundOnClick = (e: MouseEvent) => {
       if (!this.onClick && !this.onChoice) return;
       const rect = this._canvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left) * (this._canvas.width / rect.width);
       const my = (e.clientY - rect.top) * (this._canvas.height / rect.height);
 
-      // Check choice hits first
       if (this._state.choices.length > 0) {
         for (const cr of this._choiceRects) {
           if (mx >= cr.x && mx <= cr.x + cr.w && my >= cr.y && my <= cr.y + cr.h) {
@@ -102,13 +215,10 @@ export class PreviewRenderer {
           }
         }
       }
-
-      // Otherwise advance
       this.onClick?.();
-    });
+    };
 
-    // Pointer cursor over choices
-    this._canvas.addEventListener('mousemove', (e) => {
+    this._boundOnMouseMove = (e: MouseEvent) => {
       const rect = this._canvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left) * (this._canvas.width / rect.width);
       const my = (e.clientY - rect.top) * (this._canvas.height / rect.height);
@@ -120,41 +230,58 @@ export class PreviewRenderer {
         }
       }
       this._canvas.style.cursor = over ? 'pointer' : 'default';
-    });
+    };
+
+    this._canvas.addEventListener('click', this._boundOnClick);
+    this._canvas.addEventListener('mousemove', this._boundOnMouseMove);
   }
 
-  // ---- Public API ----
-
-  /** Start the render loop. */
-  start(): void {
-    if (this._running) return;
-    this._running = true;
-    this._lastTime = performance.now();
-    this._loop();
+  /** Draw a blank black canvas (used after Stop to release visual state). */
+  drawBlank(): void {
+    const ctx = this._ctx;
+    const cw = this._canvas.width / (window.devicePixelRatio || 1);
+    const ch = this._canvas.height / (window.devicePixelRatio || 1);
+    ctx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, cw, ch);
+    this._dirty = false;
   }
 
-  /** Stop the render loop. */
-  stop(): void {
-    this._running = false;
-    if (this._rafId) cancelAnimationFrame(this._rafId);
-  }
-
-  /** Resize canvas to match container. */
+  /** Resize canvas to match container. Avoids unnecessary buffer reset. */
   resize(w: number, h: number): void {
     const dpr = window.devicePixelRatio || 1;
-    this._canvas.width = w * dpr;
-    this._canvas.height = h * dpr;
+    const newW = Math.round(w * dpr);
+    const newH = Math.round(h * dpr);
+    if (this._canvas.width === newW && this._canvas.height === newH) return;
+    this._canvas.width = newW;
+    this._canvas.height = newH;
     this._canvas.style.width = w + 'px';
     this._canvas.style.height = h + 'px';
     this._ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this._markDirty();
   }
 
   /** Set canvas logical resolution. */
   setResolution(w: number, h: number): void {
     this._state.resolution = [w, h];
+    this._resW = w;
+    this._resH = h;
   }
 
   // ---- Asset Loading ----
+
+  /** Register an object URL for later cleanup. */
+  addObjectUrl(url: string): void {
+    this._objectUrls.push(url);
+  }
+
+  /** Release all object URLs created by this renderer. */
+  private _releaseObjectUrls(): void {
+    for (const url of this._objectUrls) {
+      try { URL.revokeObjectURL(url); } catch {}
+    }
+    this._objectUrls = [];
+  }
 
   async loadImage(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
@@ -170,7 +297,6 @@ export class PreviewRenderer {
 
   setBackground(image: HTMLImageElement | null, transition?: string, duration?: number): void {
     if (transition && duration && this._state.background) {
-      // Animated transition
       this._transitions.push({
         type: transition,
         duration,
@@ -179,14 +305,17 @@ export class PreviewRenderer {
           this._state.background = image;
           this._state.backgroundTransitionProgress = 1;
           this._state.backgroundTransition = null;
+          this._markDirty();
         },
       });
       this._state.backgroundTransition = transition;
       this._state.backgroundTransitionProgress = 0;
+      this._markDirty();
     } else {
       this._state.background = image;
       this._state.backgroundTransition = null;
       this._state.backgroundTransitionProgress = 1;
+      this._markDirty();
     }
   }
 
@@ -223,9 +352,11 @@ export class PreviewRenderer {
         elapsed: 0,
         onComplete: () => {
           sprite.transitionProgress = 1;
+          this._markDirty();
         },
       });
     }
+    this._markDirty();
   }
 
   hideSprite(characterId: string, transition?: string, duration?: number): void {
@@ -239,12 +370,15 @@ export class PreviewRenderer {
         elapsed: 0,
         onComplete: () => {
           this._state.sprites.delete(characterId);
+          this._markDirty();
         },
       });
       sprite.transition = transition;
       sprite.transitionProgress = 1;
+      this._markDirty();
     } else {
       this._state.sprites.delete(characterId);
+      this._markDirty();
     }
   }
 
@@ -257,11 +391,12 @@ export class PreviewRenderer {
         type: 'cg_fade_in',
         duration,
         elapsed: 0,
-        onComplete: () => { this._state.cgTransitionProgress = 1; },
+        onComplete: () => { this._state.cgTransitionProgress = 1; this._markDirty(); },
       });
     } else {
       this._state.cgTransitionProgress = 1;
     }
+    this._markDirty();
   }
 
   hideCG(duration?: number): void {
@@ -274,11 +409,13 @@ export class PreviewRenderer {
           this._state.showCG = false;
           this._state.cgImage = null;
           this._state.cgTransitionProgress = 0;
+          this._markDirty();
         },
       });
     } else {
       this._state.showCG = false;
       this._state.cgImage = null;
+      this._markDirty();
     }
   }
 
@@ -288,7 +425,8 @@ export class PreviewRenderer {
     this._state.dialogueDisplayed = 0;
     this._state.dialogueSpeakerDisplayed = 0;
     this._state.showDialogue = true;
-    this._state.choices = []; // hide choices when dialogue appears
+    this._state.choices = [];
+    this._markDirty();
   }
 
   showNarration(text: string): void {
@@ -298,17 +436,20 @@ export class PreviewRenderer {
 
   showChoices(choices: { text: string; target: string }[]): void {
     this._state.choices = choices;
-    this._state.showDialogue = true; // keep textbox visible behind choices
+    this._state.showDialogue = true;
+    this._markDirty();
   }
 
   hideDialogue(): void {
     this._state.showDialogue = false;
     this._state.choices = [];
+    this._markDirty();
   }
 
   /** Instantly display full dialogue text. */
   completeText(): void {
     this._state.dialogueDisplayed = this._state.dialogueText.length;
+    this._markDirty();
   }
 
   /** Set font styles. */
@@ -317,6 +458,7 @@ export class PreviewRenderer {
     this._state.fontSize = size;
     this._state.textColor = textColor;
     this._state.nameColor = nameColor;
+    this._markDirty();
   }
 
   /** Get current state snapshot. */
@@ -329,21 +471,65 @@ export class PreviewRenderer {
     this._state = this._createDefaultState();
     this._transitions = [];
     this._choiceRects = [];
+    this._defaultBgGradient = null;
+    this._sortedSprites = [];
+    this._markDirty();
+  }
+
+  /** Check if render loop is active. */
+  isRunning(): boolean {
+    return this._running;
   }
 
   // ---- Private Render Loop ----
 
-  private _loop = (): void => {
-    if (!this._running) return;
+  /** Mark the canvas as needing a redraw. Only restarts loop when playback is active. */
+  private _markDirty(): void {
+    if (this._disposed) return;
+    this._dirty = true;
+    // Only auto-restart the loop if the user explicitly started playback.
+    // The _playing flag prevents _markDirty() from resurrecting the loop
+    // after stop() — the previous root cause of the memory leak.
+    if (this._playing && !this._running) {
+      this._running = true;
+      this._lastTime = performance.now();
+      this._loop();
+    }
+  }
+
+  /** Main render loop — only runs while _playing and there is work to do. */
+  private _loop(): void {
+    if (!this._playing || this._disposed) {
+      this._rafId = 0;
+      this._running = false;
+      return;
+    }
+
     const now = performance.now();
     const dt = (now - this._lastTime) / 1000;
     this._lastTime = now;
 
-    this._update(dt);
-    this._draw();
+    const hasTransitions = this._transitions.length > 0;
+    const hasTypewriter = this._state.showDialogue
+      && this._state.dialogueDisplayed < this._state.dialogueText.length;
+    const needsRedraw = this._dirty || hasTransitions || hasTypewriter;
 
-    this._rafId = requestAnimationFrame(this._loop);
-  };
+    if (needsRedraw) {
+      this._update(dt);
+      this._draw();
+      // Remain dirty if transitions or typewriter are still active
+      this._dirty = hasTransitions || hasTypewriter;
+    }
+
+    // Schedule next frame only if there is still work to do.
+    // When idle, keep _playing true (user intent) but clear _running.
+    if (needsRedraw) {
+      this._rafId = requestAnimationFrame(() => this._loop());
+    } else {
+      this._rafId = 0;
+      this._running = false;
+    }
+  }
 
   private _update(dt: number): void {
     // Update transitions
@@ -392,7 +578,10 @@ export class PreviewRenderer {
 
   private _draw(): void {
     const ctx = this._ctx;
-    const [W, H] = this._state.resolution;
+    // Use cached resolution values — avoid destructuring this._state.resolution
+    // which would create a new array every frame
+    const W = this._resW;
+    const H = this._resH;
 
     // Scale canvas to fit
     const cw = this._canvas.width / (window.devicePixelRatio || 1);
@@ -401,49 +590,76 @@ export class PreviewRenderer {
     const ox = (cw - W * scale) / 2;
     const oy = (ch - H * scale) / 2;
 
-    ctx.clearRect(0, 0, cw, ch);
+    // Use offscreen canvas for double-buffering (prevents flicker)
+    // Only allocate/resize when dimensions change
+    const canvasW = this._canvas.width;
+    const canvasH = this._canvas.height;
 
-    // Dark letterbox
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, cw, ch);
+    if (!this._offscreen) {
+      this._offscreen = document.createElement('canvas');
+      this._offscreenCtx = null; // force re-init
+    }
+    const oc = this._offscreen;
 
-    ctx.save();
-    ctx.translate(ox, oy);
-    ctx.scale(scale, scale);
+    if (oc.width !== canvasW || oc.height !== canvasH || !this._offscreenCtx) {
+      oc.width = canvasW;
+      oc.height = canvasH;
+      this._offscreenCtx = oc.getContext('2d')!;
+      this._offscreenW = canvasW;
+      this._offscreenH = canvasH;
+    }
+    const octx = this._offscreenCtx;
+
+    octx.setTransform(window.devicePixelRatio || 1, 0, 0, window.devicePixelRatio || 1, 0, 0);
+
+    // Single fillRect on offscreen — no intermediate visual state
+    octx.fillStyle = '#000';
+    octx.fillRect(0, 0, cw, ch);
+
+    octx.save();
+    octx.translate(ox, oy);
+    octx.scale(scale, scale);
 
     // Layer 0: Background
-    this._drawBackground(ctx, W, H);
+    this._drawBackground(octx, W, H);
 
     // Layer 1: CG overlay
     if (this._state.showCG) {
-      this._drawCG(ctx, W, H);
+      this._drawCG(octx, W, H);
     }
 
     // Layer 2: Sprites
-    this._drawSprites(ctx, W, H);
+    this._drawSprites(octx, W, H);
 
     // Layer 3: Textbox
     if (this._state.showDialogue) {
-      this._drawTextBox(ctx, W, H);
+      this._drawTextBox(octx, W, H);
     }
 
     // Layer 4: Choices
     if (this._state.choices.length > 0) {
-      this._drawChoices(ctx, W, H);
+      this._drawChoices(octx, W, H);
     }
 
-    ctx.restore();
+    octx.restore();
+
+    // Copy offscreen canvas to main canvas in one operation
+    ctx.drawImage(oc, 0, 0);
   }
 
   private _drawBackground(ctx: CanvasRenderingContext2D, W: number, H: number): void {
     const bg = this._state.background;
     if (!bg) {
-      // Default gradient background
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, '#1a1a2e');
-      grad.addColorStop(0.5, '#16213e');
-      grad.addColorStop(1, '#0f3460');
-      ctx.fillStyle = grad;
+      // Default gradient background — cached to avoid per-frame allocation
+      if (!this._defaultBgGradient || this._defaultBgResW !== W || this._defaultBgResH !== H) {
+        this._defaultBgGradient = ctx.createLinearGradient(0, 0, 0, H);
+        this._defaultBgGradient.addColorStop(0, '#1a1a2e');
+        this._defaultBgGradient.addColorStop(0.5, '#16213e');
+        this._defaultBgGradient.addColorStop(1, '#0f3460');
+        this._defaultBgResW = W;
+        this._defaultBgResH = H;
+      }
+      ctx.fillStyle = this._defaultBgGradient;
       ctx.fillRect(0, 0, W, H);
       return;
     }
@@ -486,10 +702,17 @@ export class PreviewRenderer {
   }
 
   private _drawSprites(ctx: CanvasRenderingContext2D, W: number, H: number): void {
-    const sprites = [...this._state.sprites.values()]
-      .sort((a, b) => a.zOrder - b.zOrder);
+    // Rebuild cached sorted array only when sprite count changes
+    const spriteCount = this._state.sprites.size;
+    if (this._sortedSprites.length !== spriteCount) {
+      this._sortedSprites = [...this._state.sprites.values()];
+      this._sortedSprites.sort((a, b) => a.zOrder - b.zOrder);
+    } else {
+      // Re-sort in case zOrder changed (cheaper than full rebuild)
+      this._sortedSprites.sort((a, b) => a.zOrder - b.zOrder);
+    }
 
-    for (const s of sprites) {
+    for (const s of this._sortedSprites) {
       if (!s.visible || !s.image) continue;
 
       ctx.save();

@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { Files, Puzzle, Bot, Bug } from 'lucide-react';
+import { Files, Puzzle, Bot, Bug, Settings } from 'lucide-react';
+import { useTranslation } from '@i18n/useTranslation';
 import type { SidebarView, BottomPanelView } from '../App';
 
 interface Props {
@@ -14,16 +15,19 @@ interface Props {
     activeBottom: BottomPanelView;
     onToggle: (view: BottomPanelView) => void;
   };
+  onOpenSettings?: () => void;
 }
 
-const topItems: { id: SidebarView; icon: React.ReactNode; label: string }[] = [
-  { id: 'explorer', icon: <Files size={24} />, label: 'Explorer' },
-  { id: 'plugins', icon: <Puzzle size={24} />, label: 'Plugins' },
-  { id: 'llm',     icon: <Bot size={24} />,    label: 'LLM Chat' },
-  { id: 'debug',   icon: <Bug size={24} />,    label: 'Debug' },
+const topItems: { id: SidebarView; icon: React.ReactNode; labelKey: string }[] = [
+  { id: 'explorer', icon: <Files size={24} />, labelKey: 'activitybar.explorer' },
+  { id: 'plugins', icon: <Puzzle size={24} />, labelKey: 'activitybar.plugins' },
+  { id: 'llm',     icon: <Bot size={24} />,    labelKey: 'activitybar.llm' },
+  { id: 'debug',   icon: <Bug size={24} />,    labelKey: 'activitybar.debug' },
 ];
 
-export const ActivityBar: React.FC<Props> = ({ activeView, onViewClick }) => {
+export const ActivityBar: React.FC<Props> = ({ activeView, onViewClick, onOpenSettings }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="activitybar">
       <div className="activitybar-top">
@@ -32,14 +36,22 @@ export const ActivityBar: React.FC<Props> = ({ activeView, onViewClick }) => {
             key={item.id}
             className={`activitybar-btn ${activeView === item.id ? 'active' : ''}`}
             onClick={() => onViewClick(item.id)}
-            title={item.label}
+            title={t(item.labelKey as any)}
           >
             {item.icon}
           </button>
         ))}
       </div>
       <div className="activitybar-bottom">
-        {/* Settings / Accounts */}
+        {onOpenSettings && (
+          <button
+            className="activitybar-btn"
+            onClick={onOpenSettings}
+            title={t('settings.title')}
+          >
+            <Settings size={24} />
+          </button>
+        )}
       </div>
     </div>
   );
