@@ -29,16 +29,15 @@ export const IPC = {
   // Dialogs
   DIALOG_OPEN_FILE: 'dialog:openFile',
   DIALOG_SAVE_FILE: 'dialog:saveFile',
+  DIALOG_OPEN_DIRECTORY: 'dialog:openDirectory',
+  DIALOG_ABOUT: 'dialog:about',
+
+  // View
+  VIEW_TOGGLE_DEV_TOOLS: 'view:toggleDevTools',
 
   // Platform
   PLATFORM_PATH_SEP: 'platform:pathSep',
   PLATFORM_HOME_DIR: 'platform:homeDir',
-
-  // Menu events (main → renderer)
-  MENU_NEW_PROJECT: 'menu:new-project',
-  MENU_OPEN_PROJECT: 'menu:open-project',
-  MENU_SAVE: 'menu:save',
-  MENU_SAVE_AS: 'menu:save-as',
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -60,6 +59,9 @@ export interface IpcChannelMap {
   [IPC.SETTINGS_SAVE]: { args: [EditorSettings]; result: void };
   [IPC.DIALOG_OPEN_FILE]: { args: [DialogOpenOptions?]; result: string | null };
   [IPC.DIALOG_SAVE_FILE]: { args: [string?]; result: string | null };
+  [IPC.DIALOG_OPEN_DIRECTORY]: { args: [string?]; result: string | null };
+  [IPC.DIALOG_ABOUT]: { args: []; result: void };
+  [IPC.VIEW_TOGGLE_DEV_TOOLS]: { args: []; result: void };
   [IPC.PLATFORM_PATH_SEP]: { args: []; result: string };
   [IPC.PLATFORM_HOME_DIR]: { args: []; result: string };
 }
@@ -114,6 +116,8 @@ export interface GalEngineBridge {
   dialog: {
     openFile(options?: DialogOpenOptions): Promise<string | null>;
     saveFile(defaultPath?: string): Promise<string | null>;
+    openDirectory(title?: string): Promise<string | null>;
+    about(): Promise<void>;
   };
   settings: {
     load(): Promise<EditorSettings>;
@@ -123,14 +127,8 @@ export interface GalEngineBridge {
     pathSep: Promise<string>;
     homeDir: Promise<string>;
   };
-  menu: {
-    onNewProject(cb: () => void): () => void;
-    onOpenProject(cb: (path: string) => void): () => void;
-    onSave(cb: () => void): () => void;
-    onSaveAs(cb: () => void): () => void;
-    onFind(cb: () => void): () => void;
-    onReplace(cb: () => void): () => void;
-    onFindInFiles(cb: () => void): () => void;
+  view: {
+    toggleDevTools(): void;
   };
 }
 

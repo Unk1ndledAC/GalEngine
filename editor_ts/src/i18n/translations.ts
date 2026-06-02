@@ -119,6 +119,12 @@ export type TranslationKey =
   | 'menu.zoomIn'
   | 'menu.zoomOut'
   | 'menu.toggleFullscreen'
+  | 'menu.closeProject'
+  | 'menu.find'
+  | 'menu.replace'
+  | 'menu.findInFiles'
+  | 'menu.reloadWindow'
+  | 'menu.resetZoomWindow'
   // Editor Area
   | 'editor.project'
   | 'editor.previewGame'
@@ -300,6 +306,12 @@ const zhCN: Record<TranslationKey, string> = {
   'menu.zoomIn': '放大',
   'menu.zoomOut': '缩小',
   'menu.toggleFullscreen': '切换全屏',
+  'menu.closeProject': '关闭项目',
+  'menu.find': '查找',
+  'menu.replace': '替换',
+  'menu.findInFiles': '在文件中查找',
+  'menu.reloadWindow': '重新加载窗口',
+  'menu.resetZoomWindow': '重置缩放',
   // Editor Area
   'editor.project': '项目：',
   'editor.previewGame': '预览游戏',
@@ -468,6 +480,12 @@ const jaJP: Record<TranslationKey, string> = {
   'menu.zoomIn': 'ズームイン',
   'menu.zoomOut': 'ズームアウト',
   'menu.toggleFullscreen': '全画面切り替え',
+  'menu.closeProject': 'プロジェクトを閉じる',
+  'menu.find': '検索',
+  'menu.replace': '置換',
+  'menu.findInFiles': 'ファイル内検索',
+  'menu.reloadWindow': 'ウィンドウを再読み込み',
+  'menu.resetZoomWindow': 'ズームをリセット',
   // Editor Area
   'editor.project': 'プロジェクト：',
   'editor.previewGame': 'ゲームをプレビュー',
@@ -636,6 +654,12 @@ const enUS: Record<TranslationKey, string> = {
   'menu.zoomIn': 'Zoom In',
   'menu.zoomOut': 'Zoom Out',
   'menu.toggleFullscreen': 'Toggle Full Screen',
+  'menu.closeProject': 'Close Project',
+  'menu.find': 'Find',
+  'menu.replace': 'Replace',
+  'menu.findInFiles': 'Find in Files',
+  'menu.reloadWindow': 'Reload Window',
+  'menu.resetZoomWindow': 'Reset Zoom',
   // Editor Area
   'editor.project': 'Project:',
   'editor.previewGame': 'Preview Game',

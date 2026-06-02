@@ -32,6 +32,8 @@ interface DialogAPI {
     filters?: { name: string; extensions: string[] }[];
   }): Promise<string | null>;
   saveFile(defaultPath?: string): Promise<string | null>;
+  openDirectory(title?: string): Promise<string | null>;
+  about(): Promise<void>;
 }
 
 interface PlatformAPI {
@@ -39,14 +41,8 @@ interface PlatformAPI {
   homeDir: Promise<string>;
 }
 
-interface MenuEvents {
-  onNewProject(callback: () => void): () => void;
-  onOpenProject(callback: (path: string) => void): () => void;
-  onSave(callback: () => void): () => void;
-  onSaveAs(callback: () => void): () => void;
-  onFind(callback: () => void): () => void;
-  onReplace(callback: () => void): () => void;
-  onFindInFiles(callback: () => void): () => void;
+interface ViewAPI {
+  toggleDevTools(): void;
 }
 
 interface EditorSettings {
@@ -63,7 +59,7 @@ interface GalEngineBridge {
   fs: VFSAPI;
   dialog: DialogAPI;
   platform: PlatformAPI;
-  menu: MenuEvents;
+  view: ViewAPI;
   settings: SettingsAPI;
 }
 

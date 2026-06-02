@@ -70,159 +70,9 @@ function createWindow(): BrowserWindow {
 }
 
 // ---------------------------------------------------------------------------
-// Application Menu
+// Application Menu — managed entirely in React (MenuBar.tsx).
+// Hide the native menu bar to avoid duplication.
 // ---------------------------------------------------------------------------
-
-function createMenu(lang?: string): void {
-  // Menu label translations — must stay in sync with src/i18n/translations.ts
-  const L: Record<string, Record<string, string>> = {
-    'zh-CN': {
-      file: '文件', edit: '编辑', view: '视图', help: '帮助',
-      newProject: '新建项目', openProject: '打开项目...',
-      save: '保存', saveAs: '另存为...',
-      about: '关于 GalEngine Editor',
-      undo: '撤销', redo: '重做',
-      cut: '剪切', copy: '复制', paste: '粘贴', selectAll: '全选',
-      find: '查找', replace: '替换', findInFiles: '在文件中查找/替换',
-      exit: '退出',
-      reload: '重新加载', forceReload: '强制重新加载',
-      toggleDevTools: '切换开发者工具',
-      resetZoom: '重置缩放', zoomIn: '放大', zoomOut: '缩小',
-      toggleFullscreen: '切换全屏',
-    },
-    'ja-JP': {
-      file: 'ファイル', edit: '編集', view: '表示', help: 'ヘルプ',
-      newProject: '新規プロジェクト', openProject: 'プロジェクトを開く...',
-      save: '保存', saveAs: '名前を付けて保存...',
-      about: 'GalEngine Editor について',
-      undo: '元に戻す', redo: 'やり直し',
-      cut: '切り取り', copy: 'コピー', paste: '貼り付け', selectAll: 'すべて選択',
-      find: '検索', replace: '置換', findInFiles: 'ファイル内を検索/置換',
-      exit: '終了',
-      reload: '再読み込み', forceReload: '強制再読み込み',
-      toggleDevTools: '開発者ツールを切り替え',
-      resetZoom: 'ズームをリセット', zoomIn: 'ズームイン', zoomOut: 'ズームアウト',
-      toggleFullscreen: '全画面切り替え',
-    },
-    'en-US': {
-      file: 'File', edit: 'Edit', view: 'View', help: 'Help',
-      newProject: 'New Project', openProject: 'Open Project…',
-      save: 'Save', saveAs: 'Save As…',
-      about: 'About GalEngine Editor',
-      undo: 'Undo', redo: 'Redo',
-      cut: 'Cut', copy: 'Copy', paste: 'Paste', selectAll: 'Select All',
-      find: 'Find', replace: 'Replace', findInFiles: 'Find/Replace in Files',
-      exit: 'Exit',
-      reload: 'Reload', forceReload: 'Force Reload',
-      toggleDevTools: 'Toggle Developer Tools',
-      resetZoom: 'Reset Zoom', zoomIn: 'Zoom In', zoomOut: 'Zoom Out',
-      toggleFullscreen: 'Toggle Full Screen',
-    },
-  };
-  const l = (L[lang ?? 'en-US']) ?? L['en-US'];
-
-  const template: Electron.MenuItemConstructorOptions[] = [
-    {
-      label: l.file,
-      submenu: [
-        {
-          label: l.newProject,
-          accelerator: 'Ctrl+N',
-          click: () => win?.webContents.send('menu:new-project'),
-        },
-        {
-          label: l.openProject,
-          accelerator: 'Ctrl+O',
-          click: async () => {
-            const result = await dialog.showOpenDialog(win!, {
-              title: l.openProject,
-              properties: ['openDirectory'],
-            });
-            if (!result.canceled && result.filePaths.length > 0) {
-              win?.webContents.send('menu:open-project', result.filePaths[0]);
-            }
-          },
-        },
-        { type: 'separator' },
-        {
-          label: l.save,
-          accelerator: 'Ctrl+S',
-          click: () => win?.webContents.send('menu:save'),
-        },
-        {
-          label: l.saveAs,
-          accelerator: 'Ctrl+Shift+S',
-          click: () => win?.webContents.send('menu:save-as'),
-        },
-        { type: 'separator' },
-        { label: l.exit, role: 'quit' },
-      ],
-    },
-    {
-      label: l.edit,
-      submenu: [
-        { role: 'undo', label: l.undo },
-        { role: 'redo', label: l.redo },
-        { type: 'separator' },
-        { role: 'cut', label: l.cut },
-        { role: 'copy', label: l.copy },
-        { role: 'paste', label: l.paste },
-        { role: 'selectAll', label: l.selectAll },
-        { type: 'separator' },
-        {
-          label: l.find,
-          accelerator: 'Ctrl+F',
-          click: () => win?.webContents.send('menu:find'),
-        },
-        {
-          label: l.replace,
-          accelerator: 'Ctrl+H',
-          click: () => win?.webContents.send('menu:replace'),
-        },
-        { type: 'separator' },
-        {
-          label: l.findInFiles,
-          accelerator: 'Ctrl+Shift+F',
-          click: () => win?.webContents.send('menu:find-in-files'),
-        },
-      ],
-    },
-    {
-      label: l.view,
-      submenu: [
-        { role: 'reload', label: l.reload },
-        { role: 'forceReload', label: l.forceReload },
-        { role: 'toggleDevTools', label: l.toggleDevTools },
-        { type: 'separator' },
-        { role: 'resetZoom', label: l.resetZoom },
-        { role: 'zoomIn', label: l.zoomIn },
-        { role: 'zoomOut', label: l.zoomOut },
-        { type: 'separator' },
-        { role: 'togglefullscreen', label: l.toggleFullscreen },
-      ],
-    },
-    {
-      label: l.help,
-      submenu: [
-        {
-          label: l.about,
-          click: () => {
-            void dialog.showMessageBox(win!, {
-              type: 'info',
-              title: l.about,
-              message: 'GalEngine Editor v0.2.0',
-              detail:
-                'A Visual Novel Engine & IDE built with Electron + React + Monaco.',
-            });
-          },
-        },
-      ],
-    },
-  ];
-
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
-}
 
 // ---------------------------------------------------------------------------
 // IPC Handlers — File System
@@ -300,6 +150,15 @@ function registerIpcHandlers(): void {
     return result.canceled ? null : result.filePaths[0];
   });
 
+  // Show open directory dialog (for "Open Project")
+  ipcMain.handle('dialog:openDirectory', async (_event, title?: string) => {
+    const result = await dialog.showOpenDialog(win!, {
+      title: title ?? 'Open Project',
+      properties: ['openDirectory'],
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
+
   // Show save file dialog
   ipcMain.handle('dialog:saveFile', async (_event, defaultPath?: string) => {
     const result = await dialog.showSaveDialog(win!, {
@@ -310,6 +169,21 @@ function registerIpcHandlers(): void {
       ],
     });
     return result.canceled ? null : result.filePath;
+  });
+
+  // Show about dialog
+  ipcMain.handle('dialog:about', async () => {
+    await dialog.showMessageBox(win!, {
+      type: 'info',
+      title: 'About GalEngine Editor',
+      message: 'GalEngine Editor v0.2.0',
+      detail: 'A Visual Novel Engine & IDE built with Electron + React + Monaco.',
+    });
+  });
+
+  // Toggle DevTools (requested by React menu)
+  ipcMain.on('view:toggleDevTools', () => {
+    win?.webContents.toggleDevTools();
   });
 
   // Get path separator for the platform
@@ -346,11 +220,6 @@ function registerIpcHandlers(): void {
     await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
   });
 
-  // Renderer notifies main process of language change → rebuild menu
-  ipcMain.on('settings:language-changed', (_event, lang: string) => {
-    createMenu(lang);
-  });
-
   // ---- Delete ----
 
   ipcMain.handle('fs:delete', async (_event, filePath: string) => {
@@ -369,7 +238,11 @@ function registerIpcHandlers(): void {
 
 app.whenReady().then(() => {
   registerIpcHandlers();
-  createMenu();
+  // Hide native Electron menu bar — the React MenuBar component handles all menus.
+  // On macOS the system menu is mandatory; only hide it on Windows/Linux.
+  if (process.platform !== 'darwin') {
+    Menu.setApplicationMenu(null);
+  }
   createWindow();
 
   app.on('activate', () => {

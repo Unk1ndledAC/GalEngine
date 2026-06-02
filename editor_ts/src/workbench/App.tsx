@@ -11,10 +11,12 @@ import { Sidebar } from './parts/Sidebar';
 import { EditorArea } from './parts/EditorArea';
 import { BottomPanel } from './parts/BottomPanel';
 import { StatusBar } from './parts/StatusBar';
+import { MenuBar } from './parts/MenuBar';
 import { SettingsPanel } from './settings/SettingsPanel';
 import { useSettingsStore } from './settings/SettingsStore';
 import { useProjectStore } from './contrib/project/ProjectStore';
 import { useEditorStore } from './contrib/editor/EditorStore';
+import { saveActiveFile } from './contrib/editor/MonacoEditor';
 import type { VFS } from '../engine/loader';
 
 export type SidebarView = 'explorer' | 'plugins' | 'llm' | 'debug' | 'search';
@@ -41,49 +43,6 @@ export const App: React.FC = () => {
     }
   }, [settingsLoaded, loadSettings]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Ctrl+Shift+F → Find in Files
-      if (e.ctrlKey && e.shiftKey && e.key === 'F') {
-        e.preventDefault();
-        setShowSearch(true);
-        setActiveSidebar('search');
-        setSidebarVisible(true);
-      }
-      // Ctrl+F → Monaco's built-in find (handled in MonacoEditor)
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
-
-  // Native menu bar event listeners (from main.ts Electron Menu)
-  useEffect(() => {
-    const api = window.galengine;
-    if (!api?.menu) return;
-
-    // Find (Ctrl+F) — dispatch to Monaco via keyboard event
-    const offFind = api.menu.onFind(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'f', code: 'KeyF', ctrlKey: true, bubbles: true }));
-    });
-
-    // Replace (Ctrl+H) — dispatch to Monaco via keyboard event
-    const offReplace = api.menu.onReplace(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', {
-        key: 'h', code: 'KeyH', ctrlKey: true, bubbles: true }));
-    });
-
-    // Find in Files (Ctrl+Shift+F)
-    const offFindInFiles = api.menu.onFindInFiles(() => {
-      setShowSearch(true);
-      setActiveSidebar('search');
-      setSidebarVisible(true);
-    });
-
-    return () => { offFind(); offReplace(); offFindInFiles(); };
-  }, []);
-
   // Get the VFS from the window bridge (set by renderer.tsx)
   const galApi = window.galengine;
   const vfs: VFS | undefined = galApi?.fs ? {
@@ -97,8 +56,68 @@ export const App: React.FC = () => {
     mkdir: (p: string) => galApi.fs.mkdir(p),
   } : undefined;
 
-  // New Project handler — called from WelcomeScreen
-  const handleNewProject = useCallback(async (dirPath: string, name: string) => {
+  // ---- Menu callbacks ----
+
+  // Find: dispatch Ctrl+F to Monaco (its keyboard listener picks it up)
+  const handleFind = useCallback(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'f', code: 'KeyF', ctrlKey: true, bubbles: true }));
+  }, []);
+
+  // Replace: dispatch Ctrl+H to Monaco
+  const handleReplace = useCallback(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 'h', code: 'KeyH', ctrlKey: true, bubbles: true }));
+  }, []);
+
+  // Find in Files: open search sidebar
+  const handleFindInFiles = useCallback(() => {
+    setShowSearch(true);
+    setActiveSidebar('search');
+    setSidebarVisible(true);
+  }, []);
+
+  // Save: call Monaco's save function
+  const handleSave = useCallback(() => {
+    void saveActiveFile();
+  }, []);
+
+  // Save As: same as save for now (full Save As requires path dialog — can extend later)
+  const handleSaveAs = useCallback(() => {
+    void saveActiveFile();
+  }, []);
+
+  // New Project: trigger the "New Project" dialog (open the New Project dialog via settings panel)
+  const handleNewProject = useCallback(async () => {
+    // Show settings panel with new-project tab active, or reuse WelcomeScreen's flow.
+    // For now, prompt for project location via dialog, then delegate to handleNewProjectPath.
+    if (!vfs || !galApi?.dialog) return;
+    const dir = await galApi.dialog.openDirectory('New Project Location');
+    if (!dir) return;
+    await handleNewProjectPath(dir, 'MyProject');
+  }, [vfs, galApi]);
+
+  // Open Project: use native dialog to pick directory
+  const handleOpenProject = useCallback(async () => {
+    if (!galApi?.dialog) return;
+    const dir = await galApi.dialog.openDirectory('Open Project');
+    if (!dir) return;
+    setProjectPath(dir);
+  }, [setProjectPath]);
+
+  // Close Project
+  const handleCloseProject = useCallback(() => {
+    setProjectPath('');
+    setActiveSidebar('explorer');
+  }, [setProjectPath]);
+
+  // Toggle DevTools
+  const handleToggleDevTools = useCallback(() => {
+    galApi?.view?.toggleDevTools();
+  }, [galApi]);
+
+  // ---- New Project path handler (called from WelcomeScreen and menu) ----
+  const handleNewProjectPath = useCallback(async (dirPath: string, name: string) => {
     if (!vfs) {
       console.warn('No VFS available, cannot create project');
       return;
@@ -114,7 +133,6 @@ export const App: React.FC = () => {
       await vfs.mkdir(`${dirPath}\\assets\\ui`);
       await vfs.mkdir(`${dirPath}\\assets\\fonts`);
 
-      // Create a default settings.json
       const settings = {
         name,
         version: '1.0.0',
@@ -135,8 +153,6 @@ export const App: React.FC = () => {
       );
 
       setProjectPath(dirPath);
-
-      // Auto-open settings.json so the user immediately sees file content
       const settingsPath = `${dirPath}\\settings.json`;
       openFile(settingsPath, 'settings.json');
     } catch (err) {
@@ -144,11 +160,7 @@ export const App: React.FC = () => {
     }
   }, [vfs, setProjectPath, openFile]);
 
-  // Open Project handler
-  const handleOpenProject = useCallback((dirPath: string) => {
-    setProjectPath(dirPath);
-  }, [setProjectPath]);
-
+  // ---- Sidebar / panel toggles ----
   const toggleSidebar = useCallback((view: SidebarView) => {
     if (activeSidebar === view && sidebarVisible) {
       setSidebarVisible(false);
@@ -167,13 +179,25 @@ export const App: React.FC = () => {
     }
   }, [activeBottom, bottomVisible]);
 
-  // Close search panel — switch back to explorer and hide sidebar
+  // Close search panel — switch back to explorer
   const handleCloseSearch = useCallback(() => {
     setActiveSidebar('explorer');
   }, []);
 
   return (
     <div className="workbench">
+      {/* React Menu Bar — replaces native Electron menu */}
+      <MenuBar
+        onFind={handleFind}
+        onReplace={handleReplace}
+        onFindInFiles={handleFindInFiles}
+        onSave={handleSave}
+        onSaveAs={handleSaveAs}
+        onNewProject={handleNewProject}
+        onOpenProject={handleOpenProject}
+        onCloseProject={handleCloseProject}
+        onToggleDevTools={handleToggleDevTools}
+      />
       <div className="workbench-top">
         <ActivityBar
           activeView={activeSidebar}
@@ -193,8 +217,8 @@ export const App: React.FC = () => {
                 <EditorArea
                   projectPath={projectPath}
                   vfs={vfs}
-                  onNewProject={handleNewProject}
-                  onOpenProject={handleOpenProject}
+                  onNewProject={handleNewProjectPath}
+                  onOpenProject={(dirPath) => setProjectPath(dirPath)}
                 />
               </Allotment.Pane>
               {bottomVisible && (

@@ -55,25 +55,24 @@ interface EditorSettings {
 interface SettingsAPI {
   load(): Promise<EditorSettings>;
   save(settings: EditorSettings): Promise<void>;
-  /** Notify main process that language changed (rebuilds native menu). */
-  onLanguageChange(lang: string): void;
 }
 
-interface MenuEvents {
-  onNewProject(callback: () => void): () => void;
-  onOpenProject(callback: (path: string) => void): () => void;
-  onSave(callback: () => void): () => void;
-  onSaveAs(callback: () => void): () => void;
-  onFind(callback: () => void): () => void;
-  onReplace(callback: () => void): () => void;
-  onFindInFiles(callback: () => void): () => void;
+interface DialogAPI {
+  openFile(options?: { filters?: { name: string; extensions: string[] }[] }): Promise<string | null>;
+  saveFile(defaultPath?: string): Promise<string | null>;
+  openDirectory(title?: string): Promise<string | null>;
+  about(): Promise<void>;
+}
+
+interface ViewAPI {
+  toggleDevTools(): void;
 }
 
 interface GalEngineAPI {
   fs: VFSAPI;
   dialog: DialogAPI;
   platform: PlatformAPI;
-  menu: MenuEvents;
+  view: ViewAPI;
   settings: SettingsAPI;
 }
 
@@ -97,55 +96,19 @@ const api: GalEngineAPI = {
   settings: {
     load: () => ipcRenderer.invoke('settings:load'),
     save: (s) => ipcRenderer.invoke('settings:save', s),
-    onLanguageChange: (lang) => ipcRenderer.send('settings:language-changed', lang),
   },
-
   dialog: {
     openFile: (opts) => ipcRenderer.invoke('dialog:openFile', opts),
     saveFile: (dp) => ipcRenderer.invoke('dialog:saveFile', dp),
+    openDirectory: (title) => ipcRenderer.invoke('dialog:openDirectory', title),
+    about: () => ipcRenderer.invoke('dialog:about'),
   },
-
+  view: {
+    toggleDevTools: () => ipcRenderer.send('view:toggleDevTools'),
+  },
   platform: {
     pathSep: ipcRenderer.invoke('platform:pathSep'),
     homeDir: ipcRenderer.invoke('platform:homeDir'),
-  },
-
-  menu: {
-    onNewProject(cb) {
-      const handler = () => cb();
-      ipcRenderer.on('menu:new-project', handler);
-      return () => ipcRenderer.removeListener('menu:new-project', handler);
-    },
-    onOpenProject(cb) {
-      const handler = (_e: Electron.IpcRendererEvent, p: string) => cb(p);
-      ipcRenderer.on('menu:open-project', handler);
-      return () => ipcRenderer.removeListener('menu:open-project', handler);
-    },
-    onSave(cb) {
-      const handler = () => cb();
-      ipcRenderer.on('menu:save', handler);
-      return () => ipcRenderer.removeListener('menu:save', handler);
-    },
-    onSaveAs(cb) {
-      const handler = () => cb();
-      ipcRenderer.on('menu:save-as', handler);
-      return () => ipcRenderer.removeListener('menu:save-as', handler);
-    },
-    onFind(cb) {
-      const handler = () => cb();
-      ipcRenderer.on('menu:find', handler);
-      return () => ipcRenderer.removeListener('menu:find', handler);
-    },
-    onReplace(cb) {
-      const handler = () => cb();
-      ipcRenderer.on('menu:replace', handler);
-      return () => ipcRenderer.removeListener('menu:replace', handler);
-    },
-    onFindInFiles(cb) {
-      const handler = () => cb();
-      ipcRenderer.on('menu:find-in-files', handler);
-      return () => ipcRenderer.removeListener('menu:find-in-files', handler);
-    },
   },
 };
 

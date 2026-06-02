@@ -344,15 +344,6 @@ export const FileTree: React.FC = () => {
     setRootNodes((prev) => sortNodes(prev, sortBy));
   }, [sortBy]);
 
-  // Listen for project open from menu
-  useEffect(() => {
-    if (!window.galengine) return;
-    const unsub = window.galengine.menu.onOpenProject((dirPath: string) => {
-      setProjectPath(dirPath);
-    });
-    return unsub;
-  }, [setProjectPath]);
-
   // Render empty state
   if (!projectPath) {
     return (

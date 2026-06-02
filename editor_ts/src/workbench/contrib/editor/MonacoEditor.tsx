@@ -17,6 +17,7 @@ import { useEditorStore } from './EditorStore';
 import { useSettingsStore } from '@workbench/settings/SettingsStore';
 import { getElectronVFS } from '@platform/electron-vfs';
 import { useTranslation } from '@i18n/useTranslation';
+import { setActiveEditor } from './EditorCommands';
 
 // Configure Monaco loader to use the locally installed package instead of CDN.
 // Without this, Electron apps without internet access will hang on "Loading editor..." forever.
@@ -133,6 +134,8 @@ export const MonacoEditor: React.FC = () => {
   // Monaco mount hook — t() via tRef to avoid stale closure
   const handleEditorMount: OnMount = useCallback((editor) => {
     editorRef.current = editor;
+    // Register this editor instance so the MenuBar can dispatch commands to it
+    setActiveEditor(editor);
 
     // Ctrl+F → Monaco built-in find widget
     editor.addAction({
@@ -170,6 +173,13 @@ export const MonacoEditor: React.FC = () => {
     requestAnimationFrame(() => {
       try { editor.layout(); } catch { /* ignore layout errors */ }
     });
+  }, []);
+
+  // Unregister editor instance when component unmounts
+  useEffect(() => {
+    return () => {
+      setActiveEditor(null);
+    };
   }, []);
 
   // Before mount — set up Monaco (stable, no closure issues)
