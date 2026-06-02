@@ -12,6 +12,7 @@ export default defineConfig({
       '@editor': path.resolve(__dirname, 'src/editor'),
       '@workbench': path.resolve(__dirname, 'src/workbench'),
       '@code': path.resolve(__dirname, 'src/code'),
+      '@i18n': path.resolve(__dirname, 'src/i18n'),
     },
   },
   base: './',

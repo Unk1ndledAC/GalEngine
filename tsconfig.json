@@ -23,7 +23,8 @@
       "@engine/*": ["src/engine/*"],
       "@editor/*": ["src/editor/*"],
       "@workbench/*": ["src/workbench/*"],
-      "@code/*": ["src/code/*"]
+      "@code/*": ["src/code/*"],
+      "@i18n/*": ["src/i18n/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],

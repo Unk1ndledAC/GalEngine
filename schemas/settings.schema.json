@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://GalEngine.dev/schemas/settings.json",
+  "title": "GalEngine Project Settings",
+  "description": "Top-level project configuration for a GalEngine game project.",
+  "type": "object",
+  "required": ["project", "scenes", "assets"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "description": "Project metadata.",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "description": "Game title." },
+        "version": { "type": "string", "description": "Semantic version (e.g. 1.0.0)." },
+        "author": { "type": "string", "description": "Author/studio name." },
+        "description": { "type": "string", "description": "Short description of the game." },
+        "default_language": { "type": "string", "default": "zh-CN", "description": "Default UI language code." },
+        "supported_languages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of supported language codes (e.g. [\"zh-CN\", \"en\", \"ja\"])."
+        }
+      }
+    },
+    "window": {
+      "type": "object",
+      "description": "Default window settings (can be overridden by player).",
+      "properties": {
+        "width": { "type": "integer", "default": 1280 },
+        "height": { "type": "integer", "default": 720 },
+        "title": { "type": "string", "description": "Window title." },
+        "icon": { "type": "string", "description": "Path to window icon image." },
+        "resizable": { "type": "boolean", "default": false }
+      }
+    },
+    "scenes": {
+      "type": "object",
+      "description": "Scene file mapping: scene_id -> relative path to scene script.",
+      "additionalProperties": { "type": "string" }
+    },
+    "branches": {
+      "type": "object",
+      "description": "Character route definitions.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "Display name of the character/route." },
+          "entry_scene": { "type": "string", "description": "Scene ID where this route begins." },
+          "unlock_condition": { "type": "string", "description": "Flag condition to unlock (e.g. 'flag.affection_alice >= 5')." }
+        }
+      }
+    },
+    "assets": {
+      "type": "object",
+      "description": "Asset directory path mappings.",
+      "properties": {
+        "backgrounds": { "type": "string", "default": "assets/backgrounds", "description": "Relative path to background images." },
+        "sprites": { "type": "string", "default": "assets/sprites", "description": "Relative path to character sprite images." },
+        "cgs": { "type": "string", "default": "assets/cgs", "description": "Relative path to CG images." },
+        "audio": { "type": "string", "default": "assets/audio", "description": "Relative path to audio files." },
+        "fonts": { "type": "string", "default": "assets/fonts", "description": "Relative path to font files." },
+        "ui": { "type": "string", "default": "assets/ui", "description": "Relative path to UI image assets." },
+        "videos": { "type": "string", "default": "assets/videos", "description": "Relative path to video files." },
+        "scripts": { "type": "string", "default": "scripts", "description": "Relative path to scene script files." }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "description": "Custom UI layout configuration.",
+      "properties": {
+        "layout": { "type": "string", "description": "Path to UI layout JSON file." },
+        "theme": { "type": "string", "description": "Path to UI theme/style JSON file." },
+        "main_menu": { "type": "string", "description": "Path to main menu configuration JSON." }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "description": "Audio settings overrides.",
+      "properties": {
+        "default_bgm": { "type": "string", "description": "Default background music file." },
+        "bgm_loop": { "type": "boolean", "default": true },
+        "bgm_fade_ms": { "type": "integer", "default": 1000, "description": "BGM fade duration in milliseconds." }
+      }
+    },
+    "startup": {
+      "type": "object",
+      "description": "Startup sequence configuration.",
+      "properties": {
+        "splash_screens": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "image": { "type": "string", "description": "Path to splash/logo image." },
+              "duration": { "type": "number", "description": "Display duration in seconds." },
+              "bgm": { "type": "string", "description": "Optional BGM during splash." },
+              "fade_in": { "type": "number", "default": 0.5 },
+              "fade_out": { "type": "number", "default": 0.5 }
+            }
+          }
+        },
+        "disclaimer_text": { "type": "string", "description": "Disclaimer/declaration text shown on startup." },
+        "first_scene": { "type": "string", "description": "Scene ID to start the game from." },
+        "voice_greeting": {
+          "type": "object",
+          "description": "Character voice greeting on startup.",
+          "additionalProperties": { "type": "string", "description": "character_id -> path to voice file for that character's route." }
+        },
+        "voice_farewell": {
+          "type": "object",
+          "description": "Character voice farewell on exit.",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "patches": {
+      "type": "object",
+      "description": "Game patch / DLC configuration.",
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "directory": { "type": "string", "default": "patches", "description": "Directory where patches are stored." },
+        "auto_load": { "type": "boolean", "default": true, "description": "Automatically load patches from the patches directory." }
+      }
+    },
+    "compilation": {
+      "type": "object",
+      "description": "Compilation/packaging settings.",
+      "properties": {
+        "output_dir": { "type": "string", "default": "build", "description": "Output directory for compiled game." },
+        "executable_name": { "type": "string", "default": "game", "description": "Name of the output executable." },
+        "include_runtime": { "type": "boolean", "default": true, "description": "Bundle engine runtime with the game." },
+        "compression": { "type": "string", "enum": ["none", "zlib", "lzma"], "default": "zlib" },
+        "encrypt_assets": { "type": "boolean", "default": false, "description": "Encrypt asset files in the data pack." },
+        "exclude_patterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns for files to exclude from compilation."
+        }
+      }
+    }
+  }
+}

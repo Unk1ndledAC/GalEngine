@@ -1,0 +1,69 @@
+{
+  "elements": [
+    {
+      "id": "textbox",
+      "type": "panel",
+      "x": 100,
+      "y": 500,
+      "width": 1080,
+      "height": 200,
+      "anchor": "bottom-center",
+      "style": {
+        "background_color": "rgba(0,0,0,0.75)",
+        "text_color": "#FFFFFF",
+        "text_size": 24,
+        "border_radius": 8,
+        "padding": [16, 20, 16, 20]
+      },
+      "visible": true
+    },
+    {
+      "id": "name_box",
+      "type": "panel",
+      "x": 100,
+      "y": 460,
+      "width": 280,
+      "height": 40,
+      "anchor": "bottom-left",
+      "style": {
+        "background_color": "rgba(233,69,96,0.9)",
+        "text_color": "#FFFFFF",
+        "text_size": 20,
+        "border_radius": [8, 8, 0, 0]
+      },
+      "visible_if": "current_dialogue_character != ''"
+    },
+    {
+      "id": "name_text",
+      "type": "text",
+      "x": 100,
+      "y": 460,
+      "width": 280,
+      "height": 40,
+      "anchor": "bottom-left",
+      "style": {
+        "text_color": "#FFFFFF",
+        "text_size": 20,
+        "align": "center",
+        "valign": "middle"
+      },
+      "text": "{{current_dialogue_display_name}}",
+      "visible_if": "current_dialogue_character != ''"
+    },
+    {
+      "id": "choice_container",
+      "type": "panel",
+      "x": 300,
+      "y": 250,
+      "width": 680,
+      "height": 300,
+      "anchor": "middle-center",
+      "style": {
+        "background_color": "rgba(0,0,0,0.6)",
+        "border_radius": 8,
+        "padding": [20, 30, 20, 30]
+      },
+      "visible_if": "showing_choices == true"
+    }
+  ]
+}
