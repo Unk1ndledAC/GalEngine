@@ -55,6 +55,8 @@ interface EditorSettings {
 interface SettingsAPI {
   load(): Promise<EditorSettings>;
   save(settings: EditorSettings): Promise<void>;
+  /** Notify main process that language changed (rebuilds native menu). */
+  onLanguageChange(lang: string): void;
 }
 
 interface MenuEvents {
@@ -92,6 +94,7 @@ const api: GalEngineAPI = {
   settings: {
     load: () => ipcRenderer.invoke('settings:load'),
     save: (s) => ipcRenderer.invoke('settings:save', s),
+    onLanguageChange: (lang) => ipcRenderer.send('settings:language-changed', lang),
   },
 
   dialog: {

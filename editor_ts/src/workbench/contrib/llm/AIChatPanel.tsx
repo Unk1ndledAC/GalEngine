@@ -14,6 +14,7 @@ import { useLLMStore } from './LLMStore';
 import { createProvider } from './LLMProviders';
 import { SceneGenerator } from './SceneGenerator';
 import { useEditorStore } from '../editor/EditorStore';
+import { useTranslation } from '@i18n/useTranslation';
 import { CommandType, type CommandData } from '../../../engine/types';
 
 export const AIChatPanel: React.FC = () => {
@@ -25,6 +26,7 @@ export const AIChatPanel: React.FC = () => {
   const [sceneName, setSceneName] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { t } = useTranslation();
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -37,7 +39,7 @@ export const AIChatPanel: React.FC = () => {
     if (!text || isGenerating) return;
 
     if (!config.apiKey) {
-      setError('Please configure your API key first (click gear icon).');
+      setError(t('ai.configureApiKey'));
       return;
     }
 
@@ -96,11 +98,11 @@ export const AIChatPanel: React.FC = () => {
     <div className="ai-chat-panel">
       {/* Header */}
       <div className="ai-chat-header">
-        <span className="ai-chat-title">AI Scene Generator</span>
+        <span className="ai-chat-title">{t('ai.title')}</span>
         <button
           className="ai-config-toggle"
           onClick={() => setShowConfig(!showConfig)}
-          title="Settings"
+          title={t('ai.settings')}
         >
           ⚙
         </button>
@@ -110,17 +112,17 @@ export const AIChatPanel: React.FC = () => {
       {showConfig && (
         <div className="ai-config-panel">
           <div className="ai-config-row">
-            <label>Provider</label>
+            <label>{t('ai.provider')}</label>
             <select
               value={config.provider}
               onChange={(e) => updateConfig({ provider: e.target.value as 'openai' | 'custom' })}
             >
-              <option value="openai">OpenAI</option>
-              <option value="custom">Custom (OpenAI-compatible)</option>
+              <option value="openai">{t('ai.openai')}</option>
+              <option value="custom">{t('ai.custom')}</option>
             </select>
           </div>
           <div className="ai-config-row">
-            <label>API Key</label>
+            <label>{t('ai.apiKey')}</label>
             <input
               type="password"
               value={config.apiKey}
@@ -129,7 +131,7 @@ export const AIChatPanel: React.FC = () => {
             />
           </div>
           <div className="ai-config-row">
-            <label>Endpoint</label>
+            <label>{t('ai.endpoint')}</label>
             <input
               type="text"
               value={config.apiEndpoint}
@@ -138,7 +140,7 @@ export const AIChatPanel: React.FC = () => {
             />
           </div>
           <div className="ai-config-row">
-            <label>Model</label>
+            <label>{t('ai.model')}</label>
             <input
               type="text"
               value={config.model}
@@ -147,7 +149,7 @@ export const AIChatPanel: React.FC = () => {
             />
           </div>
           <div className="ai-config-row">
-            <label>Temperature ({config.temperature})</label>
+            <label>{t('ai.temperature')} ({config.temperature})</label>
             <input
               type="range"
               min="0"
@@ -167,14 +169,14 @@ export const AIChatPanel: React.FC = () => {
           className="ai-scene-id"
           value={sceneId}
           onChange={(e) => setSceneId(e.target.value)}
-          placeholder="Scene ID (e.g., school_day1)"
+          placeholder={t('ai.sceneIdPlaceholder')}
         />
         <input
           type="text"
           className="ai-scene-name"
           value={sceneName}
           onChange={(e) => setSceneName(e.target.value)}
-          placeholder="Scene Name (e.g., First Day of School)"
+          placeholder={t('ai.sceneNamePlaceholder')}
         />
       </div>
 
@@ -182,14 +184,14 @@ export const AIChatPanel: React.FC = () => {
       <div className="ai-chat-messages">
         {messages.length === 0 && (
           <div className="ai-chat-empty">
-            <p>Describe the scene you want to create.</p>
-            <p className="ai-chat-hint">Example: "Akari meets Kenji at the school rooftop at sunset. They talk about the upcoming festival. She's nervous but excited."</p>
+            <p>{t('ai.empty')}</p>
+            <p className="ai-chat-hint">{t('ai.emptyHint')}</p>
           </div>
         )}
         {messages.map((msg) => (
           <div key={msg.id} className={`ai-chat-message ai-role-${msg.role}`}>
             <div className="ai-msg-role">
-              {msg.role === 'user' ? 'You' : msg.role === 'assistant' ? 'AI' : 'System'}
+              {msg.role === 'user' ? t('ai.you') : msg.role === 'assistant' ? 'AI' : t('ai.system')}
             </div>
             <div className="ai-msg-content">
               <pre>{msg.content}</pre>
@@ -222,12 +224,12 @@ export const AIChatPanel: React.FC = () => {
       {lastGeneratedScript && (
         <div className="ai-script-actions">
           <button className="ai-btn-secondary" onClick={handleInsertIntoEditor}>
-            Insert into Editor
+            {t('ai.insertIntoEditor')}
           </button>
           <button className="ai-btn-secondary" onClick={() => {
             navigator.clipboard.writeText(lastGeneratedScript);
           }}>
-            Copy JSON
+            {t('ai.copyJson')}
           </button>
         </div>
       )}
@@ -239,7 +241,7 @@ export const AIChatPanel: React.FC = () => {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Describe the scene..."
+          placeholder={t('ai.describeScene')}
           rows={3}
           disabled={isGenerating}
         />
@@ -248,7 +250,7 @@ export const AIChatPanel: React.FC = () => {
           onClick={handleSend}
           disabled={!prompt.trim() || isGenerating}
         >
-          {isGenerating ? '...' : 'Send'}
+          {isGenerating ? '...' : t('ai.send')}
         </button>
       </div>
     </div>

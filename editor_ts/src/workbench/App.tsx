@@ -146,6 +146,7 @@ export const App: React.FC = () => {
           activeView={activeSidebar}
           onViewClick={toggleSidebar}
           bottomViews={{ activeBottom, onToggle: toggleBottom }}
+          onOpenSettings={() => setShowSettings(true)}
         />
         <Allotment>
           {sidebarVisible && projectPath && (

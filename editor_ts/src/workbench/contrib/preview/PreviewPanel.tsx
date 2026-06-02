@@ -16,6 +16,7 @@ import { ProjectLoader, type VFS, type LoadedProject } from '../../../engine/loa
 import { SceneParser } from '../../../engine/parser';
 import { ConfigManager } from '../../../engine/config';
 import { usePreviewStore } from './PreviewStore';
+import { useTranslation } from '@i18n/useTranslation';
 import type { CommandType, DialogueData, ChoiceData, BackgroundData } from '../../../engine/types';
 import type { SpritePos } from '../../../engine/preview/PreviewRenderer';
 
@@ -81,6 +82,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
   const { isRunning, setRunning, setPaused, setScene, setError, imageCache, cacheImage, sceneName, lastError } = usePreviewStore();
   const [showControls, setShowControls] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const { t } = useTranslation();
 
   // ---- Lifecycle: init renderer on mount (don't start loop until Play) ----
   useEffect(() => {
@@ -254,7 +256,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       // Get first scene
       const firstScene = sceneIds[0];
       if (!firstScene) {
-        setError('No scenes found in project.');
+        setError(t('preview.noScenes'));
         return;
       }
 
@@ -347,7 +349,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
             className={`preview-btn ${isRunning ? 'active' : ''}`}
             onClick={handlePlay}
             disabled={isRunning}
-            title="Play"
+            title={t('preview.play')}
           >
             ▶
           </button>
@@ -355,7 +357,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
             className="preview-btn"
             onClick={handleStop}
             disabled={!isRunning}
-            title="Stop"
+            title={t('preview.stop')}
           >
             ■
           </button>
@@ -363,7 +365,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
             className="preview-btn"
             onClick={handlePauseToggle}
             disabled={!isRunning}
-            title="Pause/Resume"
+            title={t('preview.pauseResume')}
           >
             {isPaused ? '▶' : '⏸'}
           </button>
@@ -371,14 +373,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
             className="preview-btn"
             onClick={handleSkip}
             disabled={!isRunning}
-            title="Skip text"
+            title={t('preview.skipText')}
           >
             ⏭
           </button>
         </div>
         <div className="preview-toolbar-right">
           <span className="preview-scene-name">
-            {sceneName || 'Preview'}
+            {sceneName || t('preview.preview')}
           </span>
         </div>
       </div>
@@ -392,9 +394,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({ projectPath, vfs, on
       {lastError && (
         <div className="preview-error-overlay">
           <div className="preview-error-box">
-            <strong>Preview Error</strong>
+            <strong>{t('preview.error')}</strong>
             <p>{lastError}</p>
-            <button onClick={() => setError(null)}>Dismiss</button>
+            <button onClick={() => setError(null)}>{t('preview.dismiss')}</button>
           </div>
         </div>
       )}

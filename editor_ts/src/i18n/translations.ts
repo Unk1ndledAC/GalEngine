@@ -97,7 +97,97 @@ export type TranslationKey =
   | 'newproject.location'
   | 'newproject.browse'
   | 'newproject.cancel'
-  | 'newproject.create';
+  | 'newproject.create'
+  | 'newproject.creating'
+  | 'newproject.hint'
+  | 'newproject.selectDir'
+  | 'newproject.enterName'
+  | 'newproject.invalidName'
+  | 'newproject.selectDirHint'
+  // Menu items (for Electron native menu)
+  | 'menu.undo'
+  | 'menu.redo'
+  | 'menu.cut'
+  | 'menu.copy'
+  | 'menu.paste'
+  | 'menu.selectAll'
+  | 'menu.exit'
+  | 'menu.reload'
+  | 'menu.forceReload'
+  | 'menu.toggleDevTools'
+  | 'menu.resetZoom'
+  | 'menu.zoomIn'
+  | 'menu.zoomOut'
+  | 'menu.toggleFullscreen'
+  // Editor Area
+  | 'editor.project'
+  | 'editor.previewGame'
+  | 'editor.previewBtn'
+  | 'editor.closePreviewBtn'
+  | 'editor.loadingEditor'
+  | 'editor.find'
+  | 'editor.replace'
+  // Preview Panel
+  | 'preview.play'
+  | 'preview.stop'
+  | 'preview.pauseResume'
+  | 'preview.skipText'
+  | 'preview.preview'
+  | 'preview.dismiss'
+  | 'preview.noScenes'
+  // Welcome
+  | 'welcome.version'
+  | 'welcome.browserMode'
+  // Debug Panel
+  | 'debug.variables'
+  | 'debug.noSession'
+  | 'debug.breakpoints'
+  | 'debug.noBreakpoints'
+  | 'debug.callStack'
+  | 'debug.notRunning'
+  // AI Chat Panel
+  | 'ai.title'
+  | 'ai.settings'
+  | 'ai.provider'
+  | 'ai.openai'
+  | 'ai.custom'
+  | 'ai.apiKey'
+  | 'ai.endpoint'
+  | 'ai.model'
+  | 'ai.temperature'
+  | 'ai.sceneIdPlaceholder'
+  | 'ai.sceneNamePlaceholder'
+  | 'ai.empty'
+  | 'ai.emptyHint'
+  | 'ai.you'
+  | 'ai.system'
+  | 'ai.insertIntoEditor'
+  | 'ai.copyJson'
+  | 'ai.describeScene'
+  | 'ai.send'
+  | 'ai.configureApiKey'
+  // Plugin Manager
+  | 'plugins.title'
+  | 'plugins.installing'
+  | 'plugins.install'
+  | 'plugins.refresh'
+  | 'plugins.noPlugins'
+  | 'plugins.emptyHint'
+  | 'plugins.pluginCount'
+  | 'plugins.activeCount'
+  | 'plugins.enable'
+  | 'plugins.disable'
+  | 'plugins.uninstall'
+  | 'plugins.active'
+  | 'plugins.disabled'
+  | 'plugins.error'
+  | 'plugins.main'
+  | 'plugins.activatesOn'
+  | 'plugins.commands'
+  // Search Panel extra
+  | 'search.invalidRegex'
+  | 'search.replacedSummary'
+  | 'search.moreMatches';
 
 // ---------------------------------------------------------------------------
 // Translation Data
@@ -189,6 +279,96 @@ const zhCN: Record<TranslationKey, string> = {
   'newproject.browse': '浏览...',
   'newproject.cancel': '取消',
   'newproject.create': '创建',
+  'newproject.creating': '创建中...',
+  'newproject.hint': '将创建为：',
+  'newproject.selectDir': '（选择目录）',
+  'newproject.enterName': '请输入项目名称。',
+  'newproject.invalidName': '项目名称只能包含字母、数字、空格、连字符、下划线和点。',
+  'newproject.selectDirHint': '请选择父目录。',
+  // Menu items
+  'menu.undo': '撤销',
+  'menu.redo': '重做',
+  'menu.cut': '剪切',
+  'menu.copy': '复制',
+  'menu.paste': '粘贴',
+  'menu.selectAll': '全选',
+  'menu.exit': '退出',
+  'menu.reload': '重新加载',
+  'menu.forceReload': '强制重新加载',
+  'menu.toggleDevTools': '切换开发者工具',
+  'menu.resetZoom': '重置缩放',
+  'menu.zoomIn': '放大',
+  'menu.zoomOut': '缩小',
+  'menu.toggleFullscreen': '切换全屏',
+  // Editor Area
+  'editor.project': '项目：',
+  'editor.previewGame': '预览游戏',
+  'editor.previewBtn': '预览',
+  'editor.closePreviewBtn': '■ 预览',
+  'editor.loadingEditor': '加载编辑器...',
+  'editor.find': '查找',
+  'editor.replace': '替换',
+  // Preview Panel
+  'preview.play': '播放',
+  'preview.stop': '停止',
+  'preview.pauseResume': '暂停/继续',
+  'preview.skipText': '跳过文本',
+  'preview.preview': '预览',
+  'preview.dismiss': '关闭',
+  'preview.noScenes': '未找到场景。',
+  // Welcome
+  'welcome.version': 'v0.2.0',
+  'welcome.browserMode': '正在浏览器模式下运行。文件系统功能需要 Electron 桌面应用。',
+  // Debug Panel
+  'debug.variables': '变量',
+  'debug.noSession': '没有活动的游戏会话。',
+  'debug.breakpoints': '断点',
+  'debug.noBreakpoints': '没有设置断点。',
+  'debug.callStack': '调用栈',
+  'debug.notRunning': '未运行。',
+  // AI Chat Panel
+  'ai.title': 'AI 场景生成器',
+  'ai.settings': '设置',
+  'ai.provider': '提供商',
+  'ai.openai': 'OpenAI',
+  'ai.custom': '自定义（OpenAI 兼容）',
+  'ai.apiKey': 'API 密钥',
+  'ai.endpoint': '端点',
+  'ai.model': '模型',
+  'ai.temperature': '温度',
+  'ai.sceneIdPlaceholder': '场景 ID（例如 school_day1）',
+  'ai.sceneNamePlaceholder': '场景名称（例如 第一天）',
+  'ai.empty': '描述你想要创建的场景。',
+  'ai.emptyHint': '示例："Akari在夕阳下的学校天台遇见了Kenji。他们谈论即将到来的节日。她紧张但兴奋。"',
+  'ai.you': '你',
+  'ai.system': '系统',
+  'ai.insertIntoEditor': '插入到编辑器',
+  'ai.copyJson': '复制 JSON',
+  'ai.describeScene': '描述场景...',
+  'ai.send': '发送',
+  'ai.configureApiKey': '请先配置您的 API 密钥（点击齿轮图标）。',
+  // Plugin Manager
+  'plugins.title': '插件',
+  'plugins.installing': '安装中...',
+  'plugins.install': '+ 安装',
+  'plugins.refresh': '刷新',
+  'plugins.noPlugins': '未安装插件。',
+  'plugins.emptyHint': '点击"+ 安装"添加 .galplugin 文件，\n或创建包含 manifest + code 的插件。',
+  'plugins.pluginCount': '个插件',
+  'plugins.activeCount': '个激活',
+  'plugins.enable': '启用',
+  'plugins.disable': '禁用',
+  'plugins.uninstall': '卸载',
+  'plugins.active': '活跃',
+  'plugins.disabled': '已禁用',
+  'plugins.error': '错误',
+  'plugins.main': '主文件：',
+  'plugins.activatesOn': '激活条件：',
+  'plugins.commands': '命令：',
+  // Search Panel extra
+  'search.invalidRegex': '无效的正则表达式',
+  'search.replacedSummary': '已替换',
+  'search.moreMatches': '还有更多匹配',
 };
 
 const jaJP: Record<TranslationKey, string> = {
@@ -267,6 +447,96 @@ const jaJP: Record<TranslationKey, string> = {
   'newproject.browse': '参照...',
   'newproject.cancel': 'キャンセル',
   'newproject.create': '作成',
+  'newproject.creating': '作成中...',
+  'newproject.hint': '作成先：',
+  'newproject.selectDir': '（ディレクトリを選択）',
+  'newproject.enterName': 'プロジェクト名を入力してください。',
+  'newproject.invalidName': 'プロジェクト名は英数字、スペース、ハイフン、アンダースコア、ドットのみ使用可能です。',
+  'newproject.selectDirHint': '親ディレクトリを選択してください。',
+  // Menu items
+  'menu.undo': '元に戻す',
+  'menu.redo': 'やり直し',
+  'menu.cut': '切り取り',
+  'menu.copy': 'コピー',
+  'menu.paste': '貼り付け',
+  'menu.selectAll': 'すべて選択',
+  'menu.exit': '終了',
+  'menu.reload': '再読み込み',
+  'menu.forceReload': '強制再読み込み',
+  'menu.toggleDevTools': '開発者ツールを切り替え',
+  'menu.resetZoom': 'ズームをリセット',
+  'menu.zoomIn': 'ズームイン',
+  'menu.zoomOut': 'ズームアウト',
+  'menu.toggleFullscreen': '全画面切り替え',
+  // Editor Area
+  'editor.project': 'プロジェクト：',
+  'editor.previewGame': 'ゲームをプレビュー',
+  'editor.previewBtn': 'プレビュー',
+  'editor.closePreviewBtn': '■ プレビュー',
+  'editor.loadingEditor': 'エディタ読み込み中...',
+  'editor.find': '検索',
+  'editor.replace': '置換',
+  // Preview Panel
+  'preview.play': '再生',
+  'preview.stop': '停止',
+  'preview.pauseResume': '一時停止/再開',
+  'preview.skipText': 'テキストスキップ',
+  'preview.preview': 'プレビュー',
+  'preview.dismiss': '閉じる',
+  'preview.noScenes': 'シーンが見つかりません。',
+  // Welcome
+  'welcome.version': 'v0.2.0',
+  'welcome.browserMode': 'ブラウザモードで実行中。ファイルシステム機能にはElectronデスクトップアプリが必要です。',
+  // Debug Panel
+  'debug.variables': '変数',
+  'debug.noSession': 'アクティブなゲームセッションがありません。',
+  'debug.breakpoints': 'ブレークポイント',
+  'debug.noBreakpoints': 'ブレークポイントは設定されていません。',
+  'debug.callStack': 'コールスタック',
+  'debug.notRunning': '実行していません。',
+  // AI Chat Panel
+  'ai.title': 'AI シーン生成',
+  'ai.settings': '設定',
+  'ai.provider': 'プロバイダー',
+  'ai.openai': 'OpenAI',
+  'ai.custom': 'カスタム（OpenAI互換）',
+  'ai.apiKey': 'API キー',
+  'ai.endpoint': 'エンドポイント',
+  'ai.model': 'モデル',
+  'ai.temperature': '温度',
+  'ai.sceneIdPlaceholder': 'シーンID（例：school_day1）',
+  'ai.sceneNamePlaceholder': 'シーン名（例：初めての登校）',
+  'ai.empty': '作成したいシーンを説明してください。',
+  'ai.emptyHint': '例：「Akariが夕暮れの学校の屋上でKenjiに会う。彼らはこれからの祭りについて話す。彼女は緊張しているがワクワクしている。」',
+  'ai.you': 'あなた',
+  'ai.system': 'システム',
+  'ai.insertIntoEditor': 'エディタに挿入',
+  'ai.copyJson': 'JSONをコピー',
+  'ai.describeScene': 'シーンを説明...',
+  'ai.send': '送信',
+  'ai.configureApiKey': '先にAPIキーを設定してください（歯車アイコンをクリック）。',
+  // Plugin Manager
+  'plugins.title': 'プラグイン',
+  'plugins.installing': 'インストール中...',
+  'plugins.install': '+ インストール',
+  'plugins.refresh': '更新',
+  'plugins.noPlugins': 'プラグインがインストールされていません。',
+  'plugins.emptyHint': '「+ インストール」をクリックして.galpluginファイルを追加するか、\nmanifest + code を含むプラグインを作成してください。',
+  'plugins.pluginCount': '件のプラグイン',
+  'plugins.activeCount': '件アクティブ',
+  'plugins.enable': '有効化',
+  'plugins.disable': '無効化',
+  'plugins.uninstall': 'アンインストール',
+  'plugins.active': 'アクティブ',
+  'plugins.disabled': '無効',
+  'plugins.error': 'エラー',
+  'plugins.main': 'メイン：',
+  'plugins.activatesOn': '起動条件：',
+  'plugins.commands': 'コマンド：',
+  // Search Panel extra
+  'search.invalidRegex': '無効な正規表現',
+  'search.replacedSummary': '置換済み',
+  'search.moreMatches': 'さらに一致する項目があります',
 };
 
 const enUS: Record<TranslationKey, string> = {
@@ -345,6 +615,96 @@ const enUS: Record<TranslationKey, string> = {
   'newproject.browse': 'Browse...',
   'newproject.cancel': 'Cancel',
   'newproject.create': 'Create',
+  'newproject.creating': 'Creating...',
+  'newproject.hint': 'Will be created as:',
+  'newproject.selectDir': '(select directory)',
+  'newproject.enterName': 'Please enter a project name.',
+  'newproject.invalidName': 'Project name can only contain letters, numbers, spaces, hyphens, underscores and dots.',
+  'newproject.selectDirHint': 'Please select a parent directory.',
+  // Menu items
+  'menu.undo': 'Undo',
+  'menu.redo': 'Redo',
+  'menu.cut': 'Cut',
+  'menu.copy': 'Copy',
+  'menu.paste': 'Paste',
+  'menu.selectAll': 'Select All',
+  'menu.exit': 'Exit',
+  'menu.reload': 'Reload',
+  'menu.forceReload': 'Force Reload',
+  'menu.toggleDevTools': 'Toggle Developer Tools',
+  'menu.resetZoom': 'Reset Zoom',
+  'menu.zoomIn': 'Zoom In',
+  'menu.zoomOut': 'Zoom Out',
+  'menu.toggleFullscreen': 'Toggle Full Screen',
+  // Editor Area
+  'editor.project': 'Project:',
+  'editor.previewGame': 'Preview Game',
+  'editor.previewBtn': '▶ Preview',
+  'editor.closePreviewBtn': '■ Preview',
+  'editor.loadingEditor': 'Loading editor...',
+  'editor.find': 'Find',
+  'editor.replace': 'Replace',
+  // Preview Panel
+  'preview.play': 'Play',
+  'preview.stop': 'Stop',
+  'preview.pauseResume': 'Pause/Resume',
+  'preview.skipText': 'Skip text',
+  'preview.preview': 'Preview',
+  'preview.dismiss': 'Dismiss',
+  'preview.noScenes': 'No scenes found in project.',
+  // Welcome
+  'welcome.version': 'v0.2.0',
+  'welcome.browserMode': 'Running in browser mode. File system features require the Electron desktop app.',
+  // Debug Panel
+  'debug.variables': 'Variables',
+  'debug.noSession': 'No active game session.',
+  'debug.breakpoints': 'Breakpoints',
+  'debug.noBreakpoints': 'No breakpoints set.',
+  'debug.callStack': 'Call Stack',
+  'debug.notRunning': 'Not running.',
+  // AI Chat Panel
+  'ai.title': 'AI Scene Generator',
+  'ai.settings': 'Settings',
+  'ai.provider': 'Provider',
+  'ai.openai': 'OpenAI',
+  'ai.custom': 'Custom (OpenAI-compatible)',
+  'ai.apiKey': 'API Key',
+  'ai.endpoint': 'Endpoint',
+  'ai.model': 'Model',
+  'ai.temperature': 'Temperature',
+  'ai.sceneIdPlaceholder': 'Scene ID (e.g., school_day1)',
+  'ai.sceneNamePlaceholder': 'Scene Name (e.g., First Day of School)',
+  'ai.empty': 'Describe the scene you want to create.',
+  'ai.emptyHint': 'Example: "Akari meets Kenji at the school rooftop at sunset. They talk about the upcoming festival. She\'s nervous but excited."',
+  'ai.you': 'You',
+  'ai.system': 'System',
+  'ai.insertIntoEditor': 'Insert into Editor',
+  'ai.copyJson': 'Copy JSON',
+  'ai.describeScene': 'Describe the scene...',
+  'ai.send': 'Send',
+  'ai.configureApiKey': 'Please configure your API key first (click gear icon).',
+  // Plugin Manager
+  'plugins.title': 'Plugins',
+  'plugins.installing': 'Installing...',
+  'plugins.install': '+ Install',
+  'plugins.refresh': 'Refresh',
+  'plugins.noPlugins': 'No plugins installed.',
+  'plugins.emptyHint': 'Click "+ Install" to add a .galplugin file,\nor create one with manifest + code.',
+  'plugins.pluginCount': 'plugin(s)',
+  'plugins.activeCount': 'active',
+  'plugins.enable': 'Enable',
+  'plugins.disable': 'Disable',
+  'plugins.uninstall': 'Uninstall',
+  'plugins.active': 'Active',
+  'plugins.disabled': 'Disabled',
+  'plugins.error': 'Error',
+  'plugins.main': 'Main:',
+  'plugins.activatesOn': 'Activates on:',
+  'plugins.commands': 'Commands:',
+  // Search Panel extra
+  'search.invalidRegex': 'Invalid regex pattern',
+  'search.replacedSummary': 'Replaced',
+  'search.moreMatches': 'more matches',
 };
 
 // ---------------------------------------------------------------------------

@@ -78,6 +78,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setLanguage: (lang) => {
     set({ language: lang });
     schedulePersist({ autoSave: get().autoSave, language: lang });
+    // Notify main process to rebuild native menu in the new language
+    const api = (window as any).galengine;
+    api?.settings?.onLanguageChange(lang);
   },
 
   loadSettings: async () => {
@@ -88,11 +91,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     }
     try {
       const settings: EditorSettings = await api.settings.load();
+      const lang = settings.language ?? DEFAULT_SETTINGS.language;
       set({
         autoSave: settings.autoSave ?? DEFAULT_SETTINGS.autoSave,
-        language: settings.language ?? DEFAULT_SETTINGS.language,
+        language: lang,
         loaded: true,
       });
+      // Rebuild native menu with the persisted language
+      api?.settings?.onLanguageChange(lang);
     } catch {
       set({ loaded: true });
     }

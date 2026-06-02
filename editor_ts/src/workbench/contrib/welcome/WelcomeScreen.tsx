@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from '@i18n/useTranslation';
 
 const RECENT_KEY = 'galengine_recent_projects';
 
@@ -33,6 +34,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [parentDir, setParentDir] = useState('');
   const [error, setError] = useState('');
   const [loadingDir, setLoadingDir] = useState(false);
+  const { t } = useTranslation();
 
   // Auto-populate parent dir from Electron homeDir on mount
   useEffect(() => {
@@ -82,15 +84,15 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const handleSubmit = useCallback(() => {
     const name = projectName.trim();
     if (!name) {
-      setError('Please enter a project name.');
+      setError(t('newproject.enterName'));
       return;
     }
     if (!/^[a-zA-Z0-9_\-. ]+$/.test(name)) {
-      setError('Project name can only contain letters, numbers, spaces, hyphens, underscores and dots.');
+      setError(t('newproject.invalidName'));
       return;
     }
     if (!parentDir.trim()) {
-      setError('Please select a parent directory.');
+      setError(t('newproject.selectDirHint'));
       return;
     }
     setError('');
@@ -116,10 +118,10 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <h2 className="newproject-title">Create New Project</h2>
+        <h2 className="newproject-title">{t('newproject.title')}</h2>
 
         <div className="newproject-field">
-          <label className="newproject-label">Project Name</label>
+          <label className="newproject-label">{t('newproject.name')}</label>
           <input
             className="newproject-input"
             type="text"
@@ -135,7 +137,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         </div>
 
         <div className="newproject-field">
-          <label className="newproject-label">Parent Directory</label>
+          <label className="newproject-label">{t('newproject.location')}</label>
           <div className="newproject-dir-row">
             <input
               className="newproject-input"
@@ -153,7 +155,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
               onClick={handleBrowse}
               disabled={creating || loadingDir}
             >
-              {loadingDir ? '...' : 'Browse'}
+              {loadingDir ? '...' : t('newproject.browse')}
             </button>
           </div>
         </div>
@@ -161,7 +163,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         {error && <p className="newproject-error">{error}</p>}
 
         <p className="newproject-hint">
-          Will be created as: {parentDir || '(select directory)'}\{projectName || '(name)'}
+          {t('newproject.hint')} {parentDir || t('newproject.selectDir')}\{projectName || t('newproject.name')}
         </p>
 
         <div className="newproject-actions">
@@ -170,14 +172,14 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
             onClick={onCancel}
             disabled={creating}
           >
-            Cancel
+            {t('newproject.cancel')}
           </button>
           <button
             className="newproject-btn newproject-btn-create"
             onClick={handleSubmit}
             disabled={creating}
           >
-            {creating ? 'Creating...' : 'Create Project'}
+            {creating ? t('newproject.creating') : t('newproject.create')}
           </button>
         </div>
       </div>
@@ -196,6 +198,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const { t } = useTranslation();
 
   // Load recent projects
   useEffect(() => {
@@ -283,8 +286,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       <div className="welcome-content">
         <div className="welcome-header">
           <h1 className="welcome-logo">GalEngine</h1>
-          <p className="welcome-subtitle">Visual Novel Engine &amp; IDE</p>
-          <p className="welcome-version">v0.2.0</p>
+          <p className="welcome-subtitle">{t('welcome.subtitle')}</p>
+          <p className="welcome-version">{t('welcome.version')}</p>
         </div>
 
         <div className="welcome-actions">
@@ -293,7 +296,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             onClick={handleNewProjectClick}
           >
             <span className="welcome-btn-icon">+</span>
-            <span className="welcome-btn-label">New Project</span>
+            <span className="welcome-btn-label">{t('welcome.newProject')}</span>
             <span className="welcome-btn-shortcut">Ctrl+N</span>
           </button>
 
@@ -302,7 +305,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             onClick={handleOpenProject}
           >
             <span className="welcome-btn-icon">&#x1F4C2;</span>
-            <span className="welcome-btn-label">Open Project</span>
+            <span className="welcome-btn-label">{t('welcome.openProject')}</span>
             <span className="welcome-btn-shortcut">Ctrl+O</span>
           </button>
         </div>
@@ -310,9 +313,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         {recentProjects.length > 0 && (
           <div className="welcome-recent">
             <div className="welcome-recent-header">
-              <h3>Recent Projects</h3>
+              <h3>{t('welcome.recentProjects')}</h3>
               <button className="welcome-clear-btn" onClick={handleClearRecent}>
-                Clear
+                {t('welcome.clearRecent')}
               </button>
             </div>
             <div className="welcome-recent-list">
@@ -336,7 +339,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
         {!hasElectron && (
           <p className="welcome-note">
-            Running in browser mode. File system features require the Electron desktop app.
+            {t('welcome.browserMode')}
           </p>
         )}
       </div>

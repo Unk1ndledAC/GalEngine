@@ -153,7 +153,7 @@ export const MonacoEditor: React.FC = () => {
     // Ctrl+F → Monaco built-in find widget
     editor.addAction({
       id: 'galengine-find',
-      label: 'Find',
+      label: t('editor.find'),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF],
       run: (ed) => {
         ed.getAction('actions.find')?.run();
@@ -163,7 +163,7 @@ export const MonacoEditor: React.FC = () => {
     // Ctrl+H → Monaco built-in replace widget
     editor.addAction({
       id: 'galengine-replace',
-      label: 'Replace',
+      label: t('editor.replace'),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyH],
       run: (ed) => {
         ed.getAction('editor.action.startFindReplaceAction')?.run();
@@ -253,7 +253,7 @@ export const MonacoEditor: React.FC = () => {
         onChange={handleChange}
         onMount={handleEditorMount}
         beforeMount={handleBeforeMount}
-        loading={<div className="monaco-placeholder">Loading editor...</div>}
+        loading={<div className="monaco-placeholder">{t('editor.loadingEditor')}</div>}
         options={{
           minimap: { enabled: true, scale: 1, showSlider: 'mouseover' },
           fontSize: 14,

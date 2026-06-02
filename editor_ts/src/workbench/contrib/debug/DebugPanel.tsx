@@ -3,21 +3,23 @@
  */
 
 import React from 'react';
+import { useTranslation } from '@i18n/useTranslation';
 
 export const DebugPanel: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="debug-panel">
       <div className="debug-section">
-        <h4>Variables</h4>
-        <p className="muted">No active game session.</p>
+        <h4>{t('debug.variables')}</h4>
+        <p className="muted">{t('debug.noSession')}</p>
       </div>
       <div className="debug-section">
-        <h4>Breakpoints</h4>
-        <p className="muted">No breakpoints set.</p>
+        <h4>{t('debug.breakpoints')}</h4>
+        <p className="muted">{t('debug.noBreakpoints')}</p>
       </div>
       <div className="debug-section">
-        <h4>Call Stack</h4>
-        <p className="muted">Not running.</p>
+        <h4>{t('debug.callStack')}</h4>
+        <p className="muted">{t('debug.notRunning')}</p>
       </div>
     </div>
   );
