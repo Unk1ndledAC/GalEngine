@@ -1,10 +1,9 @@
 # GalEngine TypeScript Version
 
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/typescript-5.6%2B-blue.svg)](https://www.typescriptlang.org/)
-<<<<<<< Updated upstream
-=======
 [![Electron](https://img.shields.io/badge/electron-42.3.0-blue.svg)](https://www.electronjs.org/)
->>>>>>> Stashed changes
+[![DOI](https://img.shields.io/badge/DOI-zenodo.20474789-blue.svg)](https://doi.org/10.5281/zenodo.20474789)
 
 ## 1. Design Principles
 
@@ -16,10 +15,7 @@
 | **Monaco as core editor** | `MonacoEditor.tsx` wraps `@monaco-editor/react` for JSON/Markdown scene script editing. |
 | **Plugin system** | `PluginHost` manages activate/deactivate lifecycle + contribution points (commands, panels, LLM providers). |
 | **Pure-logic / UI split** | `engine/` contains all game logic (zero DOM dependency); `workbench/` handles React UI. |
-<<<<<<< Updated upstream
-=======
 | **React MenuBar** | All menus (File/Edit/View/Help) live in the React layer via `MenuBar.tsx`; native Electron menu is hidden. |
->>>>>>> Stashed changes
 
 ---
 
@@ -28,49 +24,18 @@
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  main.ts            Electron main process               │
-<<<<<<< Updated upstream
-│                      BrowserWindow, IPC, native menus   │
-│  preload.ts          Context bridge (galengine API)     │
-├─────────────────────────────────────────────────────────┤
-│  src/workbench/     IDE-like workbench (React)          │
-│  ├── parts/         Layout parts                        │
-│  │   ├── ActivityBar.tsx   Left icon rail               │
-│  │   ├── Sidebar.tsx       Explorer / Plugins / LLM     │
-=======
 │                      BrowserWindow, IPC, native dialogs │
-│  preload.ts          Context bridge (galengine API)     │
+│  preload.ts          Context bridge (galengine API)    │
 ├─────────────────────────────────────────────────────────┤
 │  src/workbench/     IDE-like workbench (React)         │
 │  ├── parts/         Layout parts                        │
 │  │   ├── ActivityBar.tsx   Left icon rail               │
 │  │   ├── Sidebar.tsx       Explorer / Plugins / LLM     │
 │  │   ├── MenuBar.tsx       VSCode-style top menu bar     │
->>>>>>> Stashed changes
 │  │   ├── EditorArea.tsx    Monaco × N + WelcomeScreen   │
 │  │   ├── BottomPanel.tsx   Output / Debug / Terminal    │
 │  │   └── StatusBar.tsx     Status bar                   │
 │  ├── contrib/       Feature contributions               │
-<<<<<<< Updated upstream
-│  │   ├── welcome/          Welcome + New Project        │
-│  │   ├── project/          ProjectStore (zustand)       │
-│  │   ├── explorer/         Project file tree            │
-│  │   ├── editor/           Monaco editor wrapper        │
-│  │   ├── preview/          Live game preview (Canvas2D) │
-│  │   ├── debug/            Debug console                │
-│  │   ├── llm/              LLM chat / copilot / scene gen│
-│  │   └── plugins/          Plugin manager UI            │
-│  └── styles/        global.css                          │
-├─────────────────────────────────────────────────────────┤
-│  src/engine/        Visual novel engine (pure logic)    │
-│  ├── types.ts            All data model interfaces      │
-│  ├── config.ts           EngineConfig                   │
-│  ├── loader.ts           ProjectLoader                  │
-│  ├── parser.ts           JSON + Markdown parser         │
-│  ├── scene.ts            SceneManager                   │
-│  ├── dialogue.ts         DialogueSystem                 │
-│  ├── sprite.ts           SpriteManager                  │
-│  ├── audio.ts            AudioManager (Web Audio API)   │
-=======
 │  │   ├── welcome/          Welcome + New Project         │
 │  │   ├── project/          ProjectStore (zustand)       │
 │  │   ├── explorer/          Project file tree            │
@@ -81,7 +46,7 @@
 │  │   └── plugins/           Plugin manager UI            │
 │  └── styles/         global.css                         │
 ├─────────────────────────────────────────────────────────┤
-│  src/engine/        Visual novel engine (pure logic)   │
+│  src/engine/        Visual novel engine (pure logic)    │
 │  ├── types.ts            All data model interfaces      │
 │  ├── config.ts           EngineConfig                   │
 │  ├── loader.ts           ProjectLoader                  │
@@ -89,39 +54,24 @@
 │  ├── scene.ts            SceneManager                   │
 │  ├── dialogue.ts         DialogueSystem                 │
 │  ├── sprite.ts           SpriteManager                  │
-│  ├── audio.ts            AudioManager (Web Audio API)  │
->>>>>>> Stashed changes
+│  ├── audio.ts            AudioManager (Web Audio API)   │
 │  ├── save.ts             SaveManager                    │
 │  ├── flowchart.ts        Flowchart                      │
 │  ├── engine.ts           GalEngine main class           │
 │  └── preview/            Canvas2D renderer              │
 ├─────────────────────────────────────────────────────────┤
-<<<<<<< Updated upstream
-│  src/platform/      Platform services                   │
-│  ├── electron-vfs.ts     Electron file system           │
-=======
 │  src/platform/       Platform services                  │
 │  ├── electron-vfs.ts     Electron file system (IPC)     │
->>>>>>> Stashed changes
 │  ├── node-vfs.ts         Node.js file system            │
 │  ├── ipc.ts              IPC channel definitions        │
 │  └── plugin/             PluginHost (lifecycle + registry)│
 ├─────────────────────────────────────────────────────────┤
-<<<<<<< Updated upstream
-│  src/base/          Zero-dependency utilities           │
-│  ├── event.ts            Event/Emitter (typed events)   │
-│  ├── lifecycle.ts        Disposable pattern             │
-│  ├── async.ts            Deferred, helpers              │
-│  ├── uri.ts              URI / path utilities            │
-│  └── types.ts            Shared utility types            │
-=======
 │  src/base/           Zero-dependency utilities           │
 │  ├── event.ts            Event/Emitter (typed events)   │
 │  ├── lifecycle.ts         Disposable pattern            │
 │  ├── async.ts             Deferred, helpers             │
 │  ├── uri.ts               URI / path utilities           │
 │  └── types.ts             Shared utility types           │
->>>>>>> Stashed changes
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -130,25 +80,10 @@
 ## 3. Directory Layout
 
 ```
-<<<<<<< Updated upstream
-editor_ts/
-├── README.md          ← this file
-├── package.json
-├── tsconfig.json
-├── tsconfig.main.json
-├── vite.config.ts
-├── electron-builder.yml     ← packaging config
-├── index.html               ← Vite HTML entry
-│
-├── src/
-│   ├── main.ts              ← Electron main process
-│   ├── preload.ts           ← Context bridge
-=======
 GE TS ver/               ← project root (contains editor + engine)
 ├── src/
 │   ├── main.ts              ← Electron main process
 │   ├── preload.ts            ← Context bridge (galengine API)
->>>>>>> Stashed changes
 │   ├── renderer.tsx         ← React entry
 │   ├── global.d.ts          ← Window type augmentation
 │   │
@@ -159,11 +94,7 @@ GE TS ver/               ← project root (contains editor + engine)
 │   │   ├── uri.ts
 │   │   └── types.ts
 │   │
-<<<<<<< Updated upstream
-│   ├── platform/            ← [Layer 1] Services
-=======
 │   ├── platform/            ← [Layer 1] Platform services
->>>>>>> Stashed changes
 │   │   ├── electron-vfs.ts
 │   │   ├── node-vfs.ts
 │   │   ├── ipc.ts
@@ -185,39 +116,6 @@ GE TS ver/               ← project root (contains editor + engine)
 │   │   └── preview/
 │   │       └── PreviewRenderer.ts
 │   │
-<<<<<<< Updated upstream
-│   └── workbench/           ← [Layer 3] React IDE
-│       ├── App.tsx
-│       ├── parts/
-│       │   ├── ActivityBar.tsx
-│       │   ├── Sidebar.tsx
-│       │   ├── EditorArea.tsx
-│       │   ├── BottomPanel.tsx
-│       │   └── StatusBar.tsx
-│       ├── contrib/
-│       │   ├── welcome/     WelcomeScreen.tsx
-│       │   ├── project/     ProjectStore.ts
-│       │   ├── explorer/    FileTree.tsx
-│       │   ├── editor/      EditorStore.ts, MonacoEditor.tsx
-│       │   ├── preview/     PreviewPanel.tsx, PreviewStore.ts
-│       │   ├── debug/       DebugPanel.tsx
-│       │   ├── llm/         AIChatPanel, LLMPanel, SceneGenerator
-│       │   └── plugins/     PluginManager.tsx
-│       └── styles/
-│           └── global.css
-│
-├── scripts/                 ← Build & utility scripts
-│   ├── build-package.ps1
-│   └── generate-icon.py
-│
-└── resources/               ← Static resources
-    ├── entitlements.mac.plist
-    ├── icons/
-    │   ├── icon.ico
-    │   ├── icon.png
-    │   └── icon.icns.txt
-    └── (future: templates/)
-=======
 │   ├── workbench/           ← [Layer 3] React IDE
 │   │   ├── App.tsx
 │   │   ├── parts/
@@ -262,34 +160,10 @@ GE TS ver/               ← project root (contains editor + engine)
 ├── tsconfig.main.json
 ├── vite.config.ts
 └── electron-builder.yml   ← Packaging config
->>>>>>> Stashed changes
 ```
 
 ---
 
-<<<<<<< Updated upstream
-
-## 4. Build System
-
-| Tool | Purpose |
-|------|---------|
-| **Vite** | Dev server + HMR + production renderer build |
-| **TypeScript** | Type checking + main process compilation |
-| **electron-builder** | Packaging: NSIS (Windows), DMG (macOS), AppImage/deb (Linux) |
-| **Vitest** | Testing (future) |
-| **ESLint + Prettier** | Code quality (future) |
-
-### Key Scripts
-
-```bash
-npm run dev            # Vite dev server (renderer only)
-npm run build          # Compile main + build renderer
-npm run start          # Build + launch Electron (production mode)
-npm run electron:dev   # Dev mode with Vite HMR
-npm run package        # Full packaging pipeline (PowerShell)
-npm run package:win    # Windows NSIS installer
-npm run typecheck      # TypeScript check (no emit)
-=======
 ## 4. Build System
 
 | Tool | Purpose |
@@ -309,33 +183,10 @@ npm run start            # Build + launch Electron (production mode)
 npm run package          # Full packaging pipeline → NSIS installer
 npm run package:win      # Windows NSIS installer only
 npm run typecheck        # TypeScript check (no emit)
->>>>>>> Stashed changes
 ```
 
 ---
 
-<<<<<<< Updated upstream
-## 5. Plugin System Design
-
-The plugin system uses a simplified host pattern. Plugins declare activation events and contribution points via a manifest.
-
-**Plugin lifecycle**:
-- **Discovery**: `PluginHost` scans configured plugin directories
-- **Activation**: triggered by events (`onCommand`, `onProjectOpen`, etc.)
-- **Deactivation**: cleanup on unload or app exit
-
-**Contribution points** (planned):
-- `commands` — register commands
-- `panels` — add custom panels to workbench
-- `llmProviders` — register custom LLM backends
-- `languages` — register custom script language support
-
----
-
-## 6. LLM Integration
-
-Located in `src/workbench/contrib/llm/`:
-=======
 ## 5. Menu Bar Architecture
 
 All menus are implemented in **React** (`MenuBar.tsx`), not the native Electron menu. The native menu bar is hidden on startup (`Menu.setApplicationMenu(null)` on Windows/Linux).
@@ -393,15 +244,12 @@ The plugin system uses a simplified host pattern. Plugins declare activation eve
 
 Located in `src/workbench/contrib/llm/`:
 
->>>>>>> Stashed changes
 - **AIChatPanel** — chat interface with context awareness (current scene, selected commands)
 - **LLMPanel** — provider/model configuration
 - **LLMProviders** — provider abstraction (local Ollama / cloud OpenAI, Claude)
 - **LLMStore** — zustand store for LLM state
 - **SceneGenerator** — AI-assisted scene script generation
 - Integrated as a workbench sidebar panel
-<<<<<<< Updated upstream
-=======
 
 ---
 
@@ -410,4 +258,3 @@ Located in `src/workbench/contrib/llm/`:
 All UI strings are translated via `src/i18n/translations.ts`. Supported locales: `zh-CN`, `ja-JP`, `en-US`. Language preference is persisted in `~/.galengine/settings.json` and takes effect immediately without restart.
 
 Translation keys are type-checked via `TranslationKey` union type — missing keys cause TypeScript errors at compile time.
->>>>>>> Stashed changes
