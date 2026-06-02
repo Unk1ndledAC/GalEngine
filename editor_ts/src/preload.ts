@@ -64,6 +64,9 @@ interface MenuEvents {
   onOpenProject(callback: (path: string) => void): () => void;
   onSave(callback: () => void): () => void;
   onSaveAs(callback: () => void): () => void;
+  onFind(callback: () => void): () => void;
+  onReplace(callback: () => void): () => void;
+  onFindInFiles(callback: () => void): () => void;
 }
 
 interface GalEngineAPI {
@@ -127,6 +130,21 @@ const api: GalEngineAPI = {
       const handler = () => cb();
       ipcRenderer.on('menu:save-as', handler);
       return () => ipcRenderer.removeListener('menu:save-as', handler);
+    },
+    onFind(cb) {
+      const handler = () => cb();
+      ipcRenderer.on('menu:find', handler);
+      return () => ipcRenderer.removeListener('menu:find', handler);
+    },
+    onReplace(cb) {
+      const handler = () => cb();
+      ipcRenderer.on('menu:replace', handler);
+      return () => ipcRenderer.removeListener('menu:replace', handler);
+    },
+    onFindInFiles(cb) {
+      const handler = () => cb();
+      ipcRenderer.on('menu:find-in-files', handler);
+      return () => ipcRenderer.removeListener('menu:find-in-files', handler);
     },
   },
 };

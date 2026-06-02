@@ -140,14 +140,50 @@ export class PreviewRenderer {
     this._detachEvents();
   }
 
+  /**
+   * Pause the render loop without releasing resources.
+   * Unlike stop(), pause() keeps _playing = true and retains objectUrls
+   * so that resume() can restart the loop with all assets intact.
+   */
+  pause(): void {
+    if (!this._playing || this._disposed) return;
+    this._running = false;
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = 0;
+    }
+  }
+
+  /**
+   * Resume after pause(). No-op if already running or not playing.
+   */
+  resume(): void {
+    if (!this._playing || this._running || this._disposed) return;
+    this._running = true;
+    this._lastTime = performance.now();
+    this._markDirty();
+    this._loop();
+  }
+
   /** Completely dispose this renderer — call once, never reuse. */
   dispose(): void {
     if (this._disposed) return;
     this._disposed = true;
     this.stop();
     this._detachEvents();
+    // Zero out the canvas to force the browser to release the GPU backbuffer.
+    // Without this, a 1280×720 (or larger) RGBA texture stays in VRAM forever.
+    this._canvas.width = 0;
+    this._canvas.height = 0;
     this._offscreen = null;
     this._offscreenCtx = null;
+    // Release all internal state references so GC can collect them
+    this._state.sprites.clear();
+    this._state.background = null;
+    this._state.cgImage = null;
+    this._sortedSprites = [];
+    this._defaultBgGradient = null;
+    this._choiceRects = [];
   }
 
   /** Remove canvas event listeners. Safe to call multiple times. */

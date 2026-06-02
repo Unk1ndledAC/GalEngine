@@ -44,6 +44,9 @@ interface MenuEvents {
   onOpenProject(callback: (path: string) => void): () => void;
   onSave(callback: () => void): () => void;
   onSaveAs(callback: () => void): () => void;
+  onFind(callback: () => void): () => void;
+  onReplace(callback: () => void): () => void;
+  onFindInFiles(callback: () => void): () => void;
 }
 
 interface EditorSettings {

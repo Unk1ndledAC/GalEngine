@@ -66,22 +66,25 @@ export const MonacoEditor: React.FC = () => {
   const tabs = useEditorStore((s) => s.tabs);
   const fileContents = useEditorStore((s) => s.fileContents);
   const updateContent = useEditorStore((s) => s.updateContent);
-  const setFileContent = useEditorStore((s) => s.setFileContent);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const tRef = useRef(useTranslation().t);
+  // Keep tRef current — t() is called inside async callbacks where closure matters
+  const { t } = useTranslation();
+  tRef.current = t;
+
+  // Local loading state — avoids Zustand staleness bugs
+  const [loadingPath, setLoadingPath] = useState<string | null>(null);
 
   // Auto-save settings
   const autoSaveEnabled = useSettingsStore((s) => s.autoSave.enabled);
   const autoSaveDelay = useSettingsStore((s) => s.autoSave.delay);
 
-  const { t } = useTranslation();
-
-  // Local loading state — avoids Zustand staleness bugs
-  const [loadingPath, setLoadingPath] = useState<string | null>(null);
-
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
-  // Load file content from disk when a new tab becomes active
+  // Load file content from disk when a new tab becomes active.
+  // Uses tRef.current to avoid stale-closure issues in async callbacks.
   useEffect(() => {
     if (!activeTab) {
       setLoadingPath(null);
@@ -95,27 +98,14 @@ export const MonacoEditor: React.FC = () => {
     }
 
     let cancelled = false;
-    let resolved = false;
     setLoadingPath(path);
     const vfs = getElectronVFS();
 
-    /** Idempotent: clear loading state exactly once. */
-    const clearLoading = () => {
-      if (resolved) return;
-      resolved = true;
-      setLoadingPath(null);
-    };
-
-    // 3s timeout — file reads should be near-instant
     const timeoutId = setTimeout(() => {
       if (cancelled) return;
       console.error(`[MonacoEditor] Timeout reading: ${path}`);
-      try {
-        useEditorStore.getState().setFileContent(path, `[${t('editor.loadTimeout')}]`);
-      } catch {
-        // Never let translation errors block loading clearance
-      }
-      clearLoading();
+      useEditorStore.getState().setFileContent(path, `[${tRef.current('editor.loadTimeout')}]`);
+      setLoadingPath(null);
     }, 3_000);
 
     vfs.readTextFile(path)
@@ -128,70 +118,72 @@ export const MonacoEditor: React.FC = () => {
         if (cancelled) return;
         clearTimeout(timeoutId);
         console.error(`[MonacoEditor] Failed to read: ${path}`, err);
-        try {
-          useEditorStore.getState().setFileContent(path, `[${t('editor.loadError')}]`);
-        } catch {
-          useEditorStore.getState().setFileContent(path, '[Error loading file]');
-        }
+        useEditorStore.getState().setFileContent(path, `[${tRef.current('editor.loadError')}]`);
       })
       .finally(() => {
-        // Guaranteed: loading state is cleared regardless of
-        // whether setFileContent or t() threw an exception.
-        clearLoading();
+        setLoadingPath(null);
       });
 
     return () => {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [activeTab?.id]);
+  }, [activeTab?.id, activeTab?.path]);
 
-  // Monaco mount hook
-  const handleEditorMount: OnMount = useCallback((editor, monaco) => {
+  // Monaco mount hook — t() via tRef to avoid stale closure
+  const handleEditorMount: OnMount = useCallback((editor) => {
     editorRef.current = editor;
 
     // Ctrl+F → Monaco built-in find widget
     editor.addAction({
       id: 'galengine-find',
-      label: t('editor.find'),
+      label: tRef.current('editor.find'),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF],
-      run: (ed) => {
-        ed.getAction('actions.find')?.run();
-      },
+      run: (ed) => { ed.getAction('actions.find')?.run(); },
     });
 
     // Ctrl+H → Monaco built-in replace widget
     editor.addAction({
       id: 'galengine-replace',
-      label: t('editor.replace'),
+      label: tRef.current('editor.replace'),
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyH],
-      run: (ed) => {
-        ed.getAction('editor.action.startFindReplaceAction')?.run();
-      },
+      run: (ed) => { ed.getAction('editor.action.startFindReplaceAction')?.run(); },
     });
 
     // Register JSON schema for scene files
     monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
-      schemas: [
-        {
-          uri: 'galengine://schemas/scene.json',
-          fileMatch: ['*.scene.json'],
-          schema: SCENE_JSON_SCHEMA,
-        },
-      ],
+      schemas: [{
+        uri: 'galengine://schemas/scene.json',
+        fileMatch: ['*.scene.json'],
+        schema: SCENE_JSON_SCHEMA,
+      }],
       allowComments: true,
       trailingCommas: 'ignore',
     });
 
     // Focus the editor
     editor.focus();
+
+    // Force initial layout now that Monaco's DOM is fully constructed.
+    // This is the single point of truth for layout — no automaticLayout conflict.
+    requestAnimationFrame(() => {
+      try { editor.layout(); } catch { /* ignore layout errors */ }
+    });
   }, []);
 
-  // Before mount — set up Monaco
-  const handleBeforeMount: BeforeMount = useCallback((monaco) => {
-    // Register additional language features if needed
-    void monaco;
+  // Before mount — set up Monaco (stable, no closure issues)
+  const handleBeforeMount: BeforeMount = useCallback((m) => {
+    m.languages.json.jsonDefaults.setDiagnosticsOptions({
+      validate: true,
+      schemas: [{
+        uri: 'galengine://schemas/scene.json',
+        fileMatch: ['*.scene.json'],
+        schema: SCENE_JSON_SCHEMA,
+      }],
+      allowComments: true,
+      trailingCommas: 'ignore',
+    });
   }, []);
 
   // Track content changes
@@ -221,6 +213,26 @@ export const MonacoEditor: React.FC = () => {
     };
   }, [dirtyFiles, activeTab?.path, autoSaveEnabled, autoSaveDelay]);
 
+  // ResizeObserver-driven manual layout.
+  // Replaces automaticLayout (which locks at 0px on first mount due to
+  // React+Allotment timing) with explicit layout calls on container size change.
+  // This is the ONLY layout trigger — handleEditorMount fires the initial one.
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const ed = editorRef.current;
+
+    const observer = new ResizeObserver(() => {
+      if (ed) {
+        try { ed.layout(); } catch { /* ignore */ }
+      }
+    });
+    observer.observe(wrapper);
+
+    return () => observer.disconnect();
+  }, []);
+
   // No active tab
   if (!activeTab) {
     return (
@@ -241,10 +253,10 @@ export const MonacoEditor: React.FC = () => {
     );
   }
 
-  const content = fileContents[activeTab.path];
+  const content = fileContents[activeTab.path] ?? '';
 
   return (
-    <div className="monaco-editor-wrapper">
+    <div className="monaco-editor-wrapper" ref={wrapperRef}>
       <Editor
         height="100%"
         language={activeTab.language}
@@ -260,7 +272,8 @@ export const MonacoEditor: React.FC = () => {
           lineNumbers: 'on',
           wordWrap: 'on',
           scrollBeyondLastLine: false,
-          automaticLayout: true,
+          // automaticLayout: false — layout is handled exclusively by ResizeObserver above.
+          automaticLayout: false,
           tabSize: 2,
           renderWhitespace: 'selection',
           bracketPairColorization: { enabled: true },
@@ -269,6 +282,8 @@ export const MonacoEditor: React.FC = () => {
           cursorBlinking: 'smooth',
           cursorSmoothCaretAnimation: 'on',
           padding: { top: 8 },
+          readOnly: false,
+          domReadOnly: false,
         }}
       />
     </div>

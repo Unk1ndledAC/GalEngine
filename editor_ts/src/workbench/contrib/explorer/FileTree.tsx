@@ -602,8 +602,11 @@ const TreeList: React.FC<TreeListProps> = ({
       )}
         </React.Fragment>
       ))}
-      {/* New file at root level */}
-      {newFileParent && depth === 0 && nodes.length === 0 && (
+      {/* New file at root level — shown when newFileParent is set
+          but no parent node matched (i.e. target is the project root).
+          Previously guarded by nodes.length === 0, which hid the input
+          whenever the root already contained files — now removed. */}
+      {newFileParent && depth === 0 && !nodes.some((n) => n.path === newFileParent) && (
         <div style={{ paddingLeft: 12 }}>
           <input
             ref={newFileInputRef as React.RefObject<HTMLInputElement>}
@@ -613,6 +616,11 @@ const TreeList: React.FC<TreeListProps> = ({
             placeholder={filenamePlaceholder}
             onChange={(e) => onNewFileNameChange(e.target.value)}
             onKeyDown={onNewFileKeyDown}
+            onBlur={() => {
+              if (!newFileName.trim()) {
+                onNewFileKeyDown({ key: 'Escape' } as React.KeyboardEvent);
+              }
+            }}
           />
         </div>
       )}

@@ -14,6 +14,7 @@ import { StatusBar } from './parts/StatusBar';
 import { SettingsPanel } from './settings/SettingsPanel';
 import { useSettingsStore } from './settings/SettingsStore';
 import { useProjectStore } from './contrib/project/ProjectStore';
+import { useEditorStore } from './contrib/editor/EditorStore';
 import type { VFS } from '../engine/loader';
 
 export type SidebarView = 'explorer' | 'plugins' | 'llm' | 'debug' | 'search';
@@ -31,6 +32,7 @@ export const App: React.FC = () => {
   const setProjectPath = useProjectStore((s) => s.setProjectPath);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const settingsLoaded = useSettingsStore((s) => s.loaded);
+  const openFile = useEditorStore((s) => s.openFile);
 
   // Load persisted settings once on startup
   useEffect(() => {
@@ -53,6 +55,33 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Native menu bar event listeners (from main.ts Electron Menu)
+  useEffect(() => {
+    const api = window.galengine;
+    if (!api?.menu) return;
+
+    // Find (Ctrl+F) — dispatch to Monaco via keyboard event
+    const offFind = api.menu.onFind(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'f', code: 'KeyF', ctrlKey: true, bubbles: true }));
+    });
+
+    // Replace (Ctrl+H) — dispatch to Monaco via keyboard event
+    const offReplace = api.menu.onReplace(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'h', code: 'KeyH', ctrlKey: true, bubbles: true }));
+    });
+
+    // Find in Files (Ctrl+Shift+F)
+    const offFindInFiles = api.menu.onFindInFiles(() => {
+      setShowSearch(true);
+      setActiveSidebar('search');
+      setSidebarVisible(true);
+    });
+
+    return () => { offFind(); offReplace(); offFindInFiles(); };
   }, []);
 
   // Get the VFS from the window bridge (set by renderer.tsx)
@@ -106,10 +135,14 @@ export const App: React.FC = () => {
       );
 
       setProjectPath(dirPath);
+
+      // Auto-open settings.json so the user immediately sees file content
+      const settingsPath = `${dirPath}\\settings.json`;
+      openFile(settingsPath, 'settings.json');
     } catch (err) {
       console.error('Failed to create project:', err);
     }
-  }, [vfs, setProjectPath]);
+  }, [vfs, setProjectPath, openFile]);
 
   // Open Project handler
   const handleOpenProject = useCallback((dirPath: string) => {

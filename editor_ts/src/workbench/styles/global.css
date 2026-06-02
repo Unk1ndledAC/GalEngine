@@ -64,6 +64,99 @@ html, body, #root {
 }
 
 /* ===================================================================
+ * Menu Bar
+ * =================================================================== */
+
+.menubar {
+  display: flex;
+  align-items: center;
+  height: var(--titlebar-height);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  padding-left: 8px;
+  user-select: none;
+}
+
+.menubar-item-wrapper {
+  position: relative;
+}
+
+.menubar-item {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  border-radius: 3px;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s;
+}
+
+.menubar-item:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.menubar-item.active {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.menubar-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  padding: 4px 0;
+  z-index: 2000;
+  animation: tree-menu-in 0.1s ease;
+}
+
+.menubar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 8px;
+}
+
+.menubar-dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.08s;
+}
+
+.menubar-dropdown-item:hover {
+  background: var(--bg-hover);
+}
+
+.menubar-dropdown-item:disabled {
+  color: var(--text-muted);
+  cursor: default;
+  pointer-events: none;
+}
+
+.menubar-shortcut {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-left: 24px;
+}
+
+/* ===================================================================
  * Workbench Layout
  * =================================================================== */
 
@@ -77,6 +170,7 @@ html, body, #root {
   display: flex;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 /* ===================================================================
@@ -136,6 +230,9 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
+  min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .sidebar-header {
@@ -151,6 +248,8 @@ html, body, #root {
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 .sidebar-empty,
@@ -458,6 +557,8 @@ html, body, #root {
   flex-direction: column;
   background: var(--bg-primary);
   min-width: 0;
+  min-height: 0;
+  position: relative;
 }
 
 .editor-tabs {
@@ -572,11 +673,17 @@ html, body, #root {
   flex: 1;
   display: flex;
   overflow: hidden;
+  min-height: 0;
+  position: relative;
 }
 
 .monaco-editor-wrapper {
   width: 100%;
   height: 100%;
+  min-height: 0;
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
 }
 
 .monaco-placeholder {
@@ -2251,7 +2358,9 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   background: var(--bg-primary);
+  overflow: hidden;
 }
 
 .search-bar {

@@ -128,6 +128,9 @@ export interface GalEngineBridge {
     onOpenProject(cb: (path: string) => void): () => void;
     onSave(cb: () => void): () => void;
     onSaveAs(cb: () => void): () => void;
+    onFind(cb: () => void): () => void;
+    onReplace(cb: () => void): () => void;
+    onFindInFiles(cb: () => void): () => void;
   };
 }
 
